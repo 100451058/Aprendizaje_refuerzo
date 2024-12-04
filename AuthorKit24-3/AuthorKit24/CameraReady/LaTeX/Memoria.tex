@@ -163,8 +163,21 @@ En este documento se detalla el estudio teórico y la evaluación práctica del 
 
 
 \section{Introducción}
+En el campo de la IA, y su rápida evolución, el aprendizaje por refuerzo ha surgido como una herramienta poderosa para los problemas que implican toma de decisiones. Desde que se crearon, quedo demostrado su éxito notable en tareas de dicho tipo desde juegos hasta robótica. Sin embargo, a medida que las tareas se vuelven más complejas el uso de un solo algoritmo se ve influenciado debido a las limitaciones de los enfoques de AR planos. Es entonces cuando se ve la necesidad de ofrecer sistemas que dividan el problema en subtareas más manejables, los modelos de Aprendizaje de Refuerzo Jerárquico (ARJ).
 
+El aprendizaje por refuerzo jerárquico introdujo la estructura jerárquica al proceso de aprendizaje. Debido a ello, en vez de aprender una política para asignar el estado directamente a acciones, el ARJ permite aprender diferentes niveles de políticas, otorgando diferentes niveles de abstracción al sistema. Debido a ello, permite dividir la tarea inicial en tantas tareas como sean necesarias para enfrentar la complejidad del problema a resolver. Estas características no solo otorgan mayor nivel de simplicidad a cada política si no que ofrecen también una mejor escalabilidad y eficiencia a los algoritmos creados.
+
+Uno de los problemas típicos de dichas arquitecturas es el “Maze with Tasks” que consisten en problemas de laberintos de tareas. En dicha tarea tenemos como objetivo enseñar a un agente a navegar y completar múltiples objetivos dentro de un laberinto. Debida a la multitud de tareas que tiene que realizar el agente para poder lograr la navegación correcta por el laberinto, el problema se divide en diferentes subtareas jerárquicas (unas dependen de otras) que mediante la combinación permiten obtener el resultado esperado.
+
+Dentro de la jerarquía, las tareas a realizar se dividen en diferentes niveles de abstracción, donde la ejecución de una tarea influencia de forma directa la ejecución de las tareas hijas. Un agente de alto nivel (el meta-controlador) decide que subtareas u opción debe ejecutarse a continuación (tareas a realizar a largo plazo). Dicha elección pasa al nivel inferior donde los controladores deciden las acciones especificas necesarias para completar esa subtarea (tareas cuya ejecución es momentánea). En dichas tareas es tan importante la definición de la jerarquía como el equilibrio entre la explotación de nuevas estrategias y la explotación del conocimiento adquirido para que la recompensa a largo plazo sea máxima.
+
+De entre las arquitecturas de los ARJ, debido a la estructura jerárquica que comparte con los sistemas que regían en la Edad Media, son particularmente útiles los algoritmos de Aprendizaje por Refuerzo Feudal (ARF) para solventar dichos problemas. En el problema un gerente de alto nivel asigna la tarea a realizar a continuación mientras que los otros subgerentes reciben la tarea de realizar las acciones necesarias para lograr el fin propuesto.
+\cite {geeksforgeeks2024hrl,sutton1999between,barto2003recent,dietterich2000hierarchical}
 \section{Estudio teórico}
+
+\subsection{Definición}
+
+\subsection{Estado del arte}
 
 \section{Evaluación práctica}
 
