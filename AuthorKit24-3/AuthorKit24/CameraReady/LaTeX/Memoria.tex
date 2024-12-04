@@ -175,6 +175,42 @@ De entre las arquitecturas de los ARJ, debido a la estructura jerárquica que co
 \cite {geeksforgeeks2024hrl,sutton1999between,barto2003recent,dietterich2000hierarchical}
 \section{Estudio teórico}
 
+\subsection{FeUdal Networks: FuN}
+
+Las redes feudales se basan en la arquitectura de aprendiaje por refuerzo feudal, 
+una arquitectura del aprendizaje por refuerzo jerárquico. Esta arquitectura emplea un sistema de control, conocido
+como "manager", que asigna tareas a un subsistema conocido como "worker" que debe aprender a ejecutarlas de manera óptima.
+
+La arquitectura del sistema se muestra en la imagen siguiente \cite{feudal_networks_2024}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\columnwidth]{feudal_arquitecture.png}
+    \caption{Arquitectura de una red feudal.}
+    \label{fig:arquitectura_feudal}
+\end{figure}
+
+
+\begin{equation}
+z_t = f_{\text{percept}}(x_t);\quad s_t = f_{\text{Mspace}}(z_t)
+\label{eq:1}
+\end{equation}
+
+\begin{equation}
+h_t^M, \hat{g}_t = f_{\text{Mrnn}}(s_t, h_{t-1}^M);\quad g_t = \hat{g}_t / \|\hat{g}_t\|
+\label{eq:2}
+\end{equation}
+
+\begin{equation}
+w_t = \phi\left(\sum_{i=t-c}^t g_i\right)
+\label{eq:3}
+\end{equation}
+
+\begin{equation}
+h_t^W, U_t = f_{\text{Wrnn}}(z_t, h_{t-1}^W);\quad \pi_t = \text{SoftMax}(U_t w_t)
+\label{eq:4}
+\end{equation}
+
 \subsection{Definición}
 
 \subsection{Estado del arte}
