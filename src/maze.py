@@ -85,7 +85,7 @@ class MazeEnv(gym.Env):
 
         # configure tasks
         self.task_key = key_task
-        self.task_coin = coin_task
+        self.task_coin = 0 if coin_task is None else coin_task
         
         # define environment utils
         self.action_space = Discrete(4) # move right, bottom, left, top
@@ -115,11 +115,27 @@ class MazeEnv(gym.Env):
         random.seed(1001)
 
         self._maze = wilson_maze(self.width, self.height)
+        self._maze = self.__place_coins(self._maze, self.task_coin)
         self._curr = self._start
     
+    def __place_coins(self, maze: np.ndarray, number_coins: int) -> np.ndarray:
+        w, h = self.maze_shape
+        for _ in range(number_coins):
+            while True:
+                cx = random.randint(0, w)
+                cy = random.randint(0, h)
+                if maze[cy, cx] != 0:
+                    maze[cy, cx] = 5
+                    break
+        return maze
+
+
     def step(self, action: int ): 
         assert 0 <= action <= 3, "The action must be a number between 0 and 4. The mapping is (0: 'right', 1: 'bottom', 2: 'left', 3: 'right')"
         
+        # initial reward
+        reward = 0
+
         # apply movement
         movement = self.action2direction[action]
         new_curr = (self._curr[0] + movement[0], self._curr[1] + movement[1])
@@ -129,12 +145,15 @@ class MazeEnv(gym.Env):
 
         # update state
         # if keys are removed
-        new_state = self._maze.copy()
-
+        if self._maze[new_curr[0], new_curr[1]] == 5:
+            self._maze[new_curr[0], new_curr[1]] = 1
+            reward = 10
+        
         # final state
+        new_state = self._maze.copy()
         new_state[self._curr[0], self._curr[1]] = 5
         done   = self._curr == self._end
-        reward = 0 if not done else 100
+        reward = reward if not done else reward + 100
         return new_state, reward, done
 
     def render(self, mode: str = None):
@@ -158,6 +177,5 @@ class MazeEnv(gym.Env):
 
         current = (self._curr[1] * CELL_SIZE + CELL_SIZE // 2, self._curr[0] * CELL_SIZE + CELL_SIZE // 2)
         pygame.draw.circle(self.window, "blue", current, CELL_SIZE // 2, 0)
-
         pygame.display.flip()
 
