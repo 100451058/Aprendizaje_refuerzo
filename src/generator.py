@@ -76,6 +76,6 @@ def wilson_maze(width, height):
 
     # Ensure the start and end points are open
     maze[start[1] * 2 + 1, start[0] * 2 + 1] = 2
-    maze[end[1] * 2 + 1, end[0] * 2 + 1] = 3
+    maze[end[1] * 2 + 1, end[0] * 2 + 1]     = 3
 
     return maze

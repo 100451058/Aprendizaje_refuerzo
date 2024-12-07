@@ -1,4 +1,6 @@
-from typing import Optional
+from optparse import Option
+from tkinter.tix import CELL
+from typing import Literal, Optional
 
 import heapq
 import random
@@ -7,8 +9,9 @@ import numpy as np
 import gymnasium as gym
 from   gymnasium.spaces import Discrete, Dict, Box
 
-from .maze_generator import wilson_maze
+from .generator import wilson_maze
 
+import pygame
 
 def get_optimal_path(maze, start, end):
     start, end = tuple(start), tuple(end)
@@ -58,20 +61,21 @@ def get_optimal_path(maze, start, end):
 
     return []
 
+CELL_SIZE: int = 10 # px
 
 class MazeEnv(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
     
-    def __init__(self, maze_size: tuple[int, int], key_task: bool = True, coin_task: Optional[int] = None):
+    def __init__(self, maze_size: tuple[int, int], key_task: bool = True, coin_task: Optional[int] = None, render_mode: Literal['human', 'rgb-array'] = 'human'):
         """Maze Environment
 
         Args:
             maze_size (tuple[int, int]): shape of the maze (width, height). The final maze state is (2 * width + 1, 2 * height + 1)
             key_task (bool, optional): wheter keys and doors are added to the maze to stop movement. Defaults to True.
             coin_task (int, optional): Number of coins that are placed in the map. Defaults to None.
+            render_mode (str, optional): Render model ('human' or 'rgb-array')
         """
         super().__init__()
-        
         # define maze settings
         width, height = maze_size
 
@@ -92,11 +96,19 @@ class MazeEnv(gym.Env):
             3: np.array([-1,  0]) # top
         }
         # the state of the maze is an image
-        self.observation_space = Box(low = 0, max = 255, shape = (*self.maze_shape, 1), dtype = np.uint8)
+        self.observation_space = Box(low = 0, high = 255, shape = (*self.maze_shape, 1), dtype = np.uint8)
 
         self._start = (1, 1)
         self._end   = tuple(np.array(self.maze_shape) - 2)
         self._curr  = self._start
+
+        self.render_mode = render_mode
+        if self.render_mode == 'human':
+            pygame.init()
+
+            size = self.maze_shape[0] * CELL_SIZE, self.maze_shape[1] * CELL_SIZE
+            self.window = pygame.display.set_mode(size)
+            pygame.display.set_caption("Maze Game")
 
     def reset(self) -> np.ndarray:
         np.random.seed(1001)
@@ -110,13 +122,42 @@ class MazeEnv(gym.Env):
         
         # apply movement
         movement = self.action2direction[action]
-        self._curr = (self._curr[0] + movement[0], self._curr[1] + movement[1])
-        
+        new_curr = (self._curr[0] + movement[0], self._curr[1] + movement[1])
+        if self._maze[new_curr[0], new_curr[1]] == 0:
+            return self._maze, -1, False
+        self._curr = new_curr
+
         # update state
         # if keys are removed
         new_state = self._maze.copy()
+
+        # final state
         new_state[self._curr[0], self._curr[1]] = 5
-        
         done   = self._curr == self._end
         reward = 0 if not done else 100
         return new_state, reward, done
+
+    def render(self, mode: str = None):
+        mode = mode or self.render_mode
+        if mode != 'human': return
+        color_map = {
+            0: 'black',
+            1: 'white',
+            2: 'red',
+            3: 'green',
+            4: 'purple',
+            5: 'yellow'
+        }
+
+        self.window.fill("black")
+        for y in range(self._maze.shape[0]):
+            for x in range(self._maze.shape[1]):
+                color = color_map[self._maze[y, x]]
+                rect  = (x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+                pygame.draw.rect(self.window, color, rect, 0)
+
+        current = (self._curr[1] * CELL_SIZE + CELL_SIZE // 2, self._curr[0] * CELL_SIZE + CELL_SIZE // 2)
+        pygame.draw.circle(self.window, "blue", current, CELL_SIZE // 2, 0)
+
+        pygame.display.flip()
+
