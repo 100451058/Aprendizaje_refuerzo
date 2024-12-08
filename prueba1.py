@@ -1,3 +1,4 @@
+from time import sleep
 import numpy as np
 import random
 import gymnasium as gym
@@ -6,7 +7,7 @@ import pygame
 
 # Parámetros
 episodios_usuario = 5
-episodios_agente = 5
+episodios_agente = 2000
 
 class Manager:
     def __init__(self, env):
@@ -18,6 +19,7 @@ class Manager:
         self.end = env._end
 
     def select_goal(self, state):
+
         if np.random.rand() < self.epsilon:
             coins = np.argwhere(self.env._maze == 5)
             if len(coins) > 0:
@@ -44,6 +46,7 @@ class Worker:
         self.epsilon = 0.1
 
     def select_action(self, state, goal):
+
         if np.random.rand() < self.epsilon:
             return self.env.action_space.sample()
         else:
@@ -71,9 +74,6 @@ manager = Manager(env)
 worker = Worker(env)
 
 # ITERACION DEL USUARIO
-state = env.reset()
-done = False
-goal = manager.select_goal(state)  # El manager selecciona el objetivo al inicio del episodio
 # Bucle principal para controlar el agente con el teclado
 for i in range(episodios_usuario):
     state = env.reset()
@@ -122,8 +122,6 @@ for i in range(episodios_agente):
         manager.update_q_table(state, goal, reward, next_state)
         state = next_state
         env.render()
-        # print(f"Estado: {state}, Recompensa: {reward}, Objetivo: {goal}")
-
         # Si se alcanza el objetivo, selecciona un nuevo objetivo
         if np.array_equal(state, goal):
             goal = manager.select_goal(state)
@@ -131,9 +129,29 @@ for i in range(episodios_agente):
 
 env.close()
 
-# PRINT THE Q-TABLES
-print("Q-table del manager:")
-print(manager.q_table)
+#Imprimo la politica
+print("Política del manager")
+print(np.argmax(manager.q_table, axis=2))
 
-print("Q-table del worker:")
-print(worker.q_table)
+print("Política del worker")
+print(np.argmax(worker.q_table, axis=2))
+
+#Probar la eficiencia de la politica
+state = env.reset()
+done = False
+goal = manager.select_goal(state)  # El manager selecciona el objetivo al inicio del episodio
+while not done:
+    action = worker.select_action(state, goal)
+    next_state, reward, done = env.step(action)
+    state = next_state
+    env.render()
+    # print(f"Estado: {state}, Recompensa: {reward}, Objetivo: {goal}")
+
+    # Si se alcanza el objetivo, selecciona un nuevo objetivo
+    if np.array_equal(state, goal):
+        goal = manager.select_goal(state)
+        manager.update_q_table(state, goal, reward, next_state)
+    
+    sleep(4)
+
+
