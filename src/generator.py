@@ -50,7 +50,7 @@ def wilson_maze(width, height):
         return no_loops_path
     
     # Generate the maze
-    while len(visited) < width * height:
+    while len(visited) < width * height: # Until all cells are visited
         # Start a random walk from an unvisited cell
         current_cell = None
         while current_cell is None or current_cell in visited:

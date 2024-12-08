@@ -17,10 +17,10 @@ def get_optimal_path(maze, start, end):
     start, end = tuple(start), tuple(end)
 
     possible_movement = [
-        [-1,  0],
-        [ 1,  0],
-        [ 0, -1],
-        [ 0,  1]
+        [-1,  0], # arriba
+        [ 1,  0], # abajo
+        [ 0, -1], # izquierda
+        [ 0,  1]  # derecha
     ]
 
     def h(pos): return abs(end[0] - pos[0]) + abs(end[1] - pos[1])
@@ -117,13 +117,15 @@ class MazeEnv(gym.Env):
         self._maze = wilson_maze(self.width, self.height)
         self._maze = self.__place_coins(self._maze, self.task_coin)
         self._curr = self._start
+
+        return self._curr
     
     def __place_coins(self, maze: np.ndarray, number_coins: int) -> np.ndarray:
         w, h = self.maze_shape
         for _ in range(number_coins):
             while True:
-                cx = random.randint(0, w)
-                cy = random.randint(0, h)
+                cx = random.randint(0, w)-1
+                cy = random.randint(0, h)-1
                 if maze[cy, cx] != 0:
                     maze[cy, cx] = 5
                     break
@@ -131,7 +133,7 @@ class MazeEnv(gym.Env):
 
 
     def step(self, action: int ): 
-        assert 0 <= action <= 3, "The action must be a number between 0 and 4. The mapping is (0: 'right', 1: 'bottom', 2: 'left', 3: 'right')"
+        assert 0 <= action <= 3, "The action must be a number between 0 and 3. The mapping is (0: 'right', 1: 'bottom', 2: 'left', 3: 'right')"
         
         # initial reward
         reward = 0
@@ -139,22 +141,22 @@ class MazeEnv(gym.Env):
         # apply movement
         movement = self.action2direction[action]
         new_curr = (self._curr[0] + movement[0], self._curr[1] + movement[1])
-        if self._maze[new_curr[0], new_curr[1]] == 0:
-            return self._maze, -1, False
+        if self._maze[new_curr[0], new_curr[1]] == 0: 
+            return new_curr, -1, False #Aqui no se porque devuelve self._maze
         self._curr = new_curr
 
         # update state
-        # if keys are removed
+        # if found a coin
         if self._maze[new_curr[0], new_curr[1]] == 5:
-            self._maze[new_curr[0], new_curr[1]] = 1
+            self._maze[new_curr[0], new_curr[1]] = 1 # remove the coin
             reward = 10
         
         # final state
-        new_state = self._maze.copy()
-        new_state[self._curr[0], self._curr[1]] = 5
-        done   = self._curr == self._end
+        #new_state = self._maze.copy()
+        #new_state[self._curr[0], self._curr[1]] = 5
+        done   = (self._curr == self._end)
         reward = reward if not done else reward + 100
-        return new_state, reward, done
+        return new_curr, reward, done
 
     def render(self, mode: str = None):
         mode = mode or self.render_mode

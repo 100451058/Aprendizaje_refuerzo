@@ -5,7 +5,7 @@ from src.maze import MazeEnv
 from time import sleep
 
 def main():
-    env = MazeEnv((32, 32), False, None, 'human')
+    env = MazeEnv((20, 20), False, 10, 'human')
     env.reset()
     while True:
         env.render()
