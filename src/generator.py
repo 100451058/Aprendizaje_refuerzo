@@ -79,3 +79,12 @@ def wilson_maze(width, height):
     maze[end[1] * 2 + 1, end[0] * 2 + 1]     = 3
 
     return maze
+
+def reset_maze_config(maze: np.ndarray) -> np.ndarray:
+    """Reset maze while preserving the maze layout. Coins, Doors and Keys are removed.
+    Args:
+        maze (np.ndarray): original maze
+    Returns:
+        np.ndarray: cleaned maze
+    """
+    return np.place(maze, maze != 0, 1)

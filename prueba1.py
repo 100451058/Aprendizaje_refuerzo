@@ -86,7 +86,9 @@ for i in range(episodios_usuario):
             elif event.type == pygame.KEYDOWN:
                 action = get_action_from_key(event.key)
                 if action is not None:
-                    next_state, reward, done = env.step(action)
+                    _, reward, done = env.step(action)
+                    new_state = env.get_current_position()
+                    
                     worker.update_q_table(state, action, reward, next_state)
                     manager.update_q_table(state, goal, reward, next_state)
                     state = next_state

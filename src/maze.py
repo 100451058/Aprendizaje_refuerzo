@@ -9,7 +9,7 @@ import numpy as np
 import gymnasium as gym
 from   gymnasium.spaces import Discrete, Dict, Box
 
-from .generator import wilson_maze
+from .generator import reset_maze_config, wilson_maze
 
 import pygame
 
@@ -66,13 +66,14 @@ CELL_SIZE: int = 10 # px
 class MazeEnv(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
     
-    def __init__(self, maze_size: tuple[int, int], key_task: bool = True, coin_task: Optional[int] = None, render_mode: Literal['human', 'rgb-array'] = 'human'):
+    def __init__(self, maze_size: tuple[int, int], key_task: bool = True, coin_task: Optional[int] = None, fixed_maze: bool = True, render_mode: Literal['human', 'rgb-array'] = 'human'):
         """Maze Environment
 
         Args:
             maze_size (tuple[int, int]): shape of the maze (width, height). The final maze state is (2 * width + 1, 2 * height + 1)
             key_task (bool, optional): wheter keys and doors are added to the maze to stop movement. Defaults to True.
             coin_task (int, optional): Number of coins that are placed in the map. Defaults to None.
+            fixed_maze (bool, optional): Wheter the maze is regenerated in each reset or it reuses the same maze. Coins and doors are reused too. Defaults to True
             render_mode (str, optional): Render model ('human' or 'rgb-array')
         """
         super().__init__()
@@ -82,6 +83,7 @@ class MazeEnv(gym.Env):
         # the maze must contain the walls that are represented as an additional pixel.
         self.width, self.height = width, height
         self.maze_shape = (self.width * 2 + 1, self.height * 2 + 1)
+        self.fixed_maze = fixed_maze
 
         # configure tasks
         self.task_key = key_task
@@ -101,6 +103,8 @@ class MazeEnv(gym.Env):
         self._start = (1, 1)
         self._end   = tuple(np.array(self.maze_shape) - 2)
         self._curr  = self._start
+        self._maze  = None
+        self._coin_loc = []
 
         self.render_mode = render_mode
         if self.render_mode == 'human':
@@ -114,11 +118,16 @@ class MazeEnv(gym.Env):
         np.random.seed(1001)
         random.seed(1001)
 
-        self._maze = wilson_maze(self.width, self.height)
-        self._maze = self.__place_coins(self._maze, self.task_coin)
+        if self._maze is None or not self.fixed_maze:
+            self._maze = wilson_maze(self.width, self.height)
+            self._maze = self.__place_coins(self._maze, self.task_coin)
+        else:
+            self._maze = reset_maze_config(self._maze)
+            for cy, cx in self._coin_loc: self._maze[cy, cx] = 5
+
         self._curr = self._start
 
-        return self._curr
+        return self._maze
     
     def __place_coins(self, maze: np.ndarray, number_coins: int) -> np.ndarray:
         w, h = self.maze_shape
@@ -126,37 +135,47 @@ class MazeEnv(gym.Env):
             while True:
                 cx = random.randint(0, w)-1
                 cy = random.randint(0, h)-1
-                if maze[cy, cx] != 0:
-                    maze[cy, cx] = 5
+                if maze[cy, cx] == 1:
+                    self._coin_loc.append((cy, cx))
+                    maze[cy, cx] = 5 # add coin
                     break
         return maze
 
 
-    def step(self, action: int ): 
+    def step(self, action: int): 
         assert 0 <= action <= 3, "The action must be a number between 0 and 3. The mapping is (0: 'right', 1: 'bottom', 2: 'left', 3: 'right')"
         
         # initial reward
         reward = 0
 
         # apply movement
-        movement = self.action2direction[action]
-        new_curr = (self._curr[0] + movement[0], self._curr[1] + movement[1])
+        movement  = self.action2direction[action]
+
+        # the state of the env is the full maze. not the movement or place of the player
+        new_curr  = (self._curr[0] + movement[0], self._curr[1] + movement[1])
         if self._maze[new_curr[0], new_curr[1]] == 0: 
-            return new_curr, -1, False #Aqui no se porque devuelve self._maze
+            return self._maze, -1, False
         self._curr = new_curr
 
+        # mark player position
+        new_state = self._maze.copy()
+        new_state[self._curr[1], self._curr[1]] = 7 
+
         # update state
-        # if found a coin
+        # coin detection
         if self._maze[new_curr[0], new_curr[1]] == 5:
             self._maze[new_curr[0], new_curr[1]] = 1 # remove the coin
             reward = 10
         
         # final state
-        #new_state = self._maze.copy()
-        #new_state[self._curr[0], self._curr[1]] = 5
         done   = (self._curr == self._end)
         reward = reward if not done else reward + 100
-        return new_curr, reward, done
+        return new_state, reward, done
+
+    def get_current_position(self) -> tuple[int, int]: 
+        """Player Position in the maze"""
+        return self._curr 
+
 
     def render(self, mode: str = None):
         mode = mode or self.render_mode
