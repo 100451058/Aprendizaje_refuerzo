@@ -11,7 +11,7 @@ episodios_agente = 2000
 
 class Manager:
     def __init__(self, env):
-        self.env = env
+        self.env: MazeEnv = env
         self.q_table = np.zeros((env.maze_shape[0], env.maze_shape[1], env.maze_shape[0], env.maze_shape[1]))  # Q-table para el manager
         self.alpha = 0.1
         self.gamma = 0.9
@@ -21,7 +21,7 @@ class Manager:
     def select_goal(self, state):
 
         if np.random.rand() < self.epsilon:
-            coins = np.argwhere(self.env._maze == 5)
+            coins = np.where(self.env._maze == 5)
             if len(coins) > 0:
                 return coins[np.random.randint(len(coins))]
             else:
@@ -69,6 +69,8 @@ def get_action_from_key(key):
         return 3
     return None
 
+print("mazed")
+
 env = MazeEnv((5, 5), False, 3, 'human')
 manager = Manager(env)
 worker = Worker(env)
@@ -76,50 +78,57 @@ worker = Worker(env)
 # ITERACION DEL USUARIO
 # Bucle principal para controlar el agente con el teclado
 for i in range(episodios_usuario):
-    state = env.reset()
-    done = False
-    goal = manager.select_goal(state)  # El manager selecciona el objetivo al inicio del episodio
+    _ = env.reset()
+    state = env.get_current_position()
+    done  = False
+    goal  = manager.select_goal(state)  # El manager selecciona el objetivo al inicio del episodio
+    print(f"user episode: {i:02d}/{episodios_usuario:02d} -> goal: {goal}")
+    
+    env.render()
     while not done:
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_q):
                 done = True
             elif event.type == pygame.KEYDOWN:
                 action = get_action_from_key(event.key)
                 if action is not None:
                     _, reward, done = env.step(action)
-                    new_state = env.get_current_position()
+                    next_state = env.get_current_position()
                     
                     worker.update_q_table(state, action, reward, next_state)
                     manager.update_q_table(state, goal, reward, next_state)
                     state = next_state
-                    env.render()
-                    # print(f"Estado: {state}, Recompensa: {reward}, Objetivo: {goal}")
 
                     # Si se alcanza el objetivo, el episodio termina
                     if np.array_equal(state, goal):
                         goal = manager.select_goal(state)
                         manager.update_q_table(state, goal, reward, next_state)
+                        print(f"user episode: {i:02d}/{episodios_usuario:02d} -> goal: {goal}")
+        
+        env.render()
+    print()
                     
 
-
-
-
-
 # ITERACION DEL AGENTE
-state = env.reset()
+_ = env.reset()
+state = env.get_current_position()
 done = False
 goal = manager.select_goal(state)  # El manager selecciona el objetivo al inicio del episodio
+env.render()
 
 # Iteración por episodios
 for i in range(episodios_agente):
-    state = env.reset()
+    _ = env.reset()
+    state = env.get_current_position()
     done = False
     goal = manager.select_goal(state)  # El manager selecciona el objetivo al inicio del episodio
 
     # Iteración por pasos
     while not done:
         action = worker.select_action(state, goal)
-        next_state, reward, done = env.step(action)
+        _, reward, done = env.step(action)
+        next_state = env.get_current_position()
+        
         worker.update_q_table(state, action, reward, next_state)
         manager.update_q_table(state, goal, reward, next_state)
         state = next_state
@@ -139,12 +148,15 @@ print("Política del worker")
 print(np.argmax(worker.q_table, axis=2))
 
 #Probar la eficiencia de la politica
-state = env.reset()
+_ = env.reset()
+state = env.get_current_position()
 done = False
 goal = manager.select_goal(state)  # El manager selecciona el objetivo al inicio del episodio
 while not done:
     action = worker.select_action(state, goal)
-    next_state, reward, done = env.step(action)
+    _, reward, done = env.step(action)
+    next_state = env.get_current_position()
+    
     state = next_state
     env.render()
     # print(f"Estado: {state}, Recompensa: {reward}, Objetivo: {goal}")
