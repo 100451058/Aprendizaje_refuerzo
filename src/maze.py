@@ -99,7 +99,6 @@ class MazeEnv(gym.Env):
             3: np.array([-1,  0]) # top
         }
         self.coin_reward = int(100/coin_task) if coin_task > 0 else 0
-        self.next_coin_reward = self.coin_reward
         # the state of the maze is an image
         self.observation_space = Box(low = 0, high = 255, shape = (*self.maze_shape, 1), dtype = np.uint8)
 
@@ -126,7 +125,11 @@ class MazeEnv(gym.Env):
             for cy, cx in self._coin_loc: self._maze[cy, cx] = 5
             self._maze[self._end[1], self._end[0]] = 3
 
-        self._curr = self._start
+        # self._curr = self._start
+        #Select a random place as initial state
+        posiciones_posibles = np.argwhere(self._maze == 1)
+        eleccion = posiciones_posibles[random.randint(0, len(posiciones_posibles) - 1)]
+        self._curr = (eleccion[0], eleccion[1])
 
         return self._maze
     
@@ -143,7 +146,7 @@ class MazeEnv(gym.Env):
         return maze
 
 
-    def step(self, action: int): 
+    def step(self, action: int,goal: Optional[tuple[int, int]] = None) -> tuple[np.ndarray, float, bool]: 
         assert 0 <= action <= 3, "The action must be a number between 0 and 3. The mapping is (0: 'right', 1: 'bottom', 2: 'left', 3: 'right')"
         
         # initial reward
@@ -164,14 +167,14 @@ class MazeEnv(gym.Env):
 
         # update state
         # coin detection
-        if self._maze[new_curr[0], new_curr[1]] == 5:
+        if (self._maze[new_curr[0], new_curr[1]] == 5) and (new_curr[0]==goal[0] and new_curr[1]==goal[1]): #Comprobamos que sea nuestro destino
             self._maze[new_curr[0], new_curr[1]] = 1 # remove the coin
-            reward = self.next_coin_reward
-            self.next_coin_reward += self.coin_reward 
+            reward = self.coin_reward
         
         # final state
-        done   = self._curr[0] == self._end[0] and self._curr[1] == self._end[1]
-        reward = reward if not done else reward + 100
+        done   = (self._curr[0] == self._end[0]) and (self._curr[1] == self._end[1]) and ((self._maze == 5).sum() == 0) # no coins left
+
+        reward = reward if not done else 100
         return new_state, reward, done
 
     def get_current_position(self) -> tuple[int, int]: 

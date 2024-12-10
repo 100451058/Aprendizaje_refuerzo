@@ -127,7 +127,7 @@ for i in range(episodios_usuario):
     done  = False
     goal  = manager.select_goal(state)  # El manager selecciona el objetivo al inicio del episodio
     worker.transfer_learning(goal)
-    print(f"user episode: {i:02d}/{episodios_usuario:02d} -> goal: {goal}")
+    print(f"user episode: {i+1:02d}/{episodios_usuario:02d} -> goal: {goal}")
     
     env.render()
     while not done:
@@ -137,7 +137,7 @@ for i in range(episodios_usuario):
             elif event.type == pygame.KEYDOWN:
                 action = get_action_from_key(event.key)
                 if action is not None:
-                    _, reward, done = env.step(action)
+                    _, reward, done = env.step(action,goal)
                     next_state = env.get_current_position()
                     reward = 1 if reward<1 else reward
                     worker.update_q_table(state, action, reward, next_state,goal)
@@ -149,7 +149,7 @@ for i in range(episodios_usuario):
                         goal = manager.select_goal(state)
                         manager.update_q_table(state, goal, reward, next_state)
                         worker.transfer_learning(goal)
-                        print(f"user episode: {i:02d}/{episodios_usuario:02d} -> goal: {goal}")
+                        print(f"user episode: {i+1:02d}/{episodios_usuario:02d} -> goal: {goal}")
         
         env.render()
     print()
@@ -176,7 +176,7 @@ for i in range(episodios_agente):
     # Iteración por pasos
     while not done and movimientos < 150:
         action = worker.select_action(state, goal)
-        _, reward, done = env.step(action)
+        _, reward, done = env.step(action,goal)
         next_state = env.get_current_position()
         
         worker.update_q_table(state, action, reward, next_state,goal)
@@ -197,9 +197,10 @@ _ = env.reset()
 state = env.get_current_position()
 done = False
 goal = manager.select_goal(state)  # El manager selecciona el objetivo al inicio del episodio
+print(f"Objetivo: {goal}")
 while not done:
     action = worker.select_action(state, goal)
-    _, reward, done = env.step(action)
+    _, reward, done = env.step(action,goal)
     next_state = env.get_current_position()
     
     state = next_state
@@ -208,11 +209,11 @@ while not done:
 
     # Si se alcanza el objetivo, selecciona un nuevo objetivo
     if np.array_equal(state, goal):
+        print(f"Objetivo: {goal}")
         goal = manager.select_goal(state)
         manager.update_q_table(state, goal, reward, next_state)
     
     if(done):
         print("SE LOGRO ENCONTRAR EL CAMINO OPTIMO")
-    sleep(1)
 
 
