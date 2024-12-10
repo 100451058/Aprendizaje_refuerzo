@@ -1,3 +1,4 @@
+import re
 from time import sleep
 import numpy as np
 import random
@@ -61,7 +62,7 @@ class Worker:
         self.q_tables[tuple(goal)] = q_table  # Guardar el q_table actualizado
     
     def transfer_learning(self, goal):
-        print(f"Transfer learning to goal: {goal}")
+        # print(f"Transfer learning to goal: {goal}")
         if(self.learned_paths == []):
             self.learned_paths.append(goal)
             q_table = np.zeros((env.maze_shape[0], env.maze_shape[1], 4))
@@ -138,7 +139,7 @@ for i in range(episodios_usuario):
                 if action is not None:
                     _, reward, done = env.step(action)
                     next_state = env.get_current_position()
-                    
+                    reward = 1 if reward<1 else reward
                     worker.update_q_table(state, action, reward, next_state,goal)
                     manager.update_q_table(state, goal, reward, next_state)
                     state = next_state
@@ -152,6 +153,7 @@ for i in range(episodios_usuario):
         
         env.render()
     print()
+env.close()
                     
 
 # ITERACION DEL AGENTE
@@ -169,9 +171,10 @@ for i in range(episodios_agente):
     done = False
     goal = manager.select_goal(state)  # El manager selecciona el objetivo al inicio del episodio
     worker.transfer_learning(goal)
+    movimientos = 0
 
     # Iteración por pasos
-    while not done:
+    while not done and movimientos < 150:
         action = worker.select_action(state, goal)
         _, reward, done = env.step(action)
         next_state = env.get_current_position()
@@ -180,6 +183,7 @@ for i in range(episodios_agente):
         manager.update_q_table(state, goal, reward, next_state)
         state = next_state
         env.render()
+        movimientos+=1
         # Si se alcanza el objetivo, selecciona un nuevo objetivo
         if np.array_equal(state, goal):
             goal = manager.select_goal(state)
@@ -207,6 +211,8 @@ while not done:
         goal = manager.select_goal(state)
         manager.update_q_table(state, goal, reward, next_state)
     
+    if(done):
+        print("SE LOGRO ENCONTRAR EL CAMINO OPTIMO")
     sleep(1)
 
 
