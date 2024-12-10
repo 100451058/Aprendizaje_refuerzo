@@ -21,7 +21,7 @@ class Manager:
     def select_goal(self, state):
 
         if np.random.rand() < self.epsilon:
-            coins = np.where(self.env._maze == 5)
+            coins = np.argwhere(self.env._maze == 5).tolist()
             if len(coins) > 0:
                 return coins[np.random.randint(len(coins))]
             else:
@@ -40,21 +40,63 @@ class Manager:
 class Worker:
     def __init__(self, env):
         self.env = env
-        self.q_table = np.zeros((env.maze_shape[0], env.maze_shape[1], 4))  # Q-table para el worker
+        self.q_tables =  {} # Q-table para el worker
         self.alpha = 0.1
         self.gamma = 0.9
         self.epsilon = 0.1
+        self.learned_paths = []
 
     def select_action(self, state, goal):
-
+        self.epsilon = self.epsilon *0.95 if self.epsilon > 0.10 else 0.1
         if np.random.rand() < self.epsilon:
             return self.env.action_space.sample()
         else:
-            return np.argmax(self.q_table[state[0], state[1]])
+            q_table = self.q_tables[tuple(goal)]
+            return np.argmax(q_table[state[0], state[1]])
 
-    def update_q_table(self, state, action, reward, next_state):
-        best_next_q = np.max(self.q_table[next_state[0], next_state[1]])
-        self.q_table[state[0], state[1], action] += self.alpha * (reward + self.gamma * best_next_q - self.q_table[state[0], state[1], action])
+    def update_q_table(self, state, action, reward, next_state, goal):
+        q_table = self.q_tables[tuple(goal)]
+        best_next_q = np.max(q_table[next_state[0], next_state[1]])
+        q_table[state[0], state[1], action] += self.alpha * (reward + self.gamma * best_next_q - q_table[state[0], state[1], action])
+        self.q_tables[tuple(goal)] = q_table  # Guardar el q_table actualizado
+    
+    def transfer_learning(self, goal):
+        print(f"Transfer learning to goal: {goal}")
+        if(self.learned_paths == []):
+            self.learned_paths.append(goal)
+            q_table = np.zeros((env.maze_shape[0], env.maze_shape[1], 4))
+            self.q_tables[tuple(goal)] = q_table
+        else:
+            if goal in self.learned_paths: #APRENDIDO
+                self.q_table = self.q_tables[tuple(goal)]
+                self.epsilon = 0.1
+            else: #NO APRENDIDO
+                # Calcular path mas parecido
+                min_distance = -1
+                min_goal = None
+                for learned_goal in self.learned_paths:
+                    distance = sum(abs(np.array(goal)-np.array(learned_goal)))
+                    # distance = np.linalg.norm(np.array(goal) - np.array(learned_goal))
+                    if distance < min_distance or min_distance == -1:
+                        min_distance = distance
+                        min_goal = learned_goal
+                
+                #Crear nueva política
+                if(min_distance < 3): #Si tengo una política parecida
+                    self.q_tables[tuple(goal)] = self.q_tables[tuple(min_goal)]
+                    # Le doy más libertad a investigar
+                    self.epsilon = 0.5
+                    
+                else: #Si no tengo una política parecida
+                    q_table = np.zeros((env.maze_shape[0], env.maze_shape[1], 4))
+                    self.q_tables[tuple(goal)] = q_table
+                    self.epsilon = 0.1
+
+                # Añadir nuevo objetivo
+                self.learned_paths.append(goal)
+
+
+        
 
 
 # Función para mapear las teclas a acciones
@@ -76,12 +118,14 @@ manager = Manager(env)
 worker = Worker(env)
 
 # ITERACION DEL USUARIO
+print("AYUDANDO AL AGENTE...")
 # Bucle principal para controlar el agente con el teclado
 for i in range(episodios_usuario):
     _ = env.reset()
     state = env.get_current_position()
     done  = False
     goal  = manager.select_goal(state)  # El manager selecciona el objetivo al inicio del episodio
+    worker.transfer_learning(goal)
     print(f"user episode: {i:02d}/{episodios_usuario:02d} -> goal: {goal}")
     
     env.render()
@@ -95,7 +139,7 @@ for i in range(episodios_usuario):
                     _, reward, done = env.step(action)
                     next_state = env.get_current_position()
                     
-                    worker.update_q_table(state, action, reward, next_state)
+                    worker.update_q_table(state, action, reward, next_state,goal)
                     manager.update_q_table(state, goal, reward, next_state)
                     state = next_state
 
@@ -103,6 +147,7 @@ for i in range(episodios_usuario):
                     if np.array_equal(state, goal):
                         goal = manager.select_goal(state)
                         manager.update_q_table(state, goal, reward, next_state)
+                        worker.transfer_learning(goal)
                         print(f"user episode: {i:02d}/{episodios_usuario:02d} -> goal: {goal}")
         
         env.render()
@@ -110,6 +155,7 @@ for i in range(episodios_usuario):
                     
 
 # ITERACION DEL AGENTE
+print("EL AGENTE SOLO...")
 _ = env.reset()
 state = env.get_current_position()
 done = False
@@ -122,6 +168,7 @@ for i in range(episodios_agente):
     state = env.get_current_position()
     done = False
     goal = manager.select_goal(state)  # El manager selecciona el objetivo al inicio del episodio
+    worker.transfer_learning(goal)
 
     # Iteración por pasos
     while not done:
@@ -129,7 +176,7 @@ for i in range(episodios_agente):
         _, reward, done = env.step(action)
         next_state = env.get_current_position()
         
-        worker.update_q_table(state, action, reward, next_state)
+        worker.update_q_table(state, action, reward, next_state,goal)
         manager.update_q_table(state, goal, reward, next_state)
         state = next_state
         env.render()
@@ -137,15 +184,9 @@ for i in range(episodios_agente):
         if np.array_equal(state, goal):
             goal = manager.select_goal(state)
             manager.update_q_table(state, goal, reward, next_state)
+            worker.transfer_learning(goal)
 
 env.close()
-
-#Imprimo la politica
-print("Política del manager")
-print(np.argmax(manager.q_table, axis=2))
-
-print("Política del worker")
-print(np.argmax(worker.q_table, axis=2))
 
 #Probar la eficiencia de la politica
 _ = env.reset()
@@ -166,6 +207,6 @@ while not done:
         goal = manager.select_goal(state)
         manager.update_q_table(state, goal, reward, next_state)
     
-    sleep(4)
+    sleep(1)
 
 

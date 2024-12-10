@@ -98,6 +98,8 @@ class MazeEnv(gym.Env):
             2: np.array([ 0, -1]), # left
             3: np.array([-1,  0]) # top
         }
+        self.coin_reward = int(100/coin_task) if coin_task > 0 else 0
+        self.next_coin_reward = self.coin_reward
         # the state of the maze is an image
         self.observation_space = Box(low = 0, high = 255, shape = (*self.maze_shape, 1), dtype = np.uint8)
 
@@ -164,7 +166,8 @@ class MazeEnv(gym.Env):
         # coin detection
         if self._maze[new_curr[0], new_curr[1]] == 5:
             self._maze[new_curr[0], new_curr[1]] = 1 # remove the coin
-            reward = 10
+            reward = self.next_coin_reward
+            self.next_coin_reward += self.coin_reward 
         
         # final state
         done   = self._curr[0] == self._end[0] and self._curr[1] == self._end[1]
