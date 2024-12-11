@@ -1,8 +1,4 @@
-import re
-from time import sleep
 import numpy as np
-import random
-import gymnasium as gym
 from src.maze import MazeEnv
 import pygame
 
@@ -20,18 +16,18 @@ class Manager:
         self.end = env._end
 
     def select_goal(self, state):
-
+        coins = np.argwhere(self.env._maze == 5).tolist()
         if np.random.rand() < self.epsilon:
-            coins = np.argwhere(self.env._maze == 5).tolist()
             if len(coins) > 0:
                 return coins[np.random.randint(len(coins))]
             else:
                 return self.env._end
         else:
-            end = [int(item) for item in self.end]
-            goals = np.argwhere(self.env._maze == 5).tolist() + [end]
-            q_values = [self.q_table[state[0], state[1], goal[0], goal[1]] for goal in goals]
-            return goals[np.argmax(q_values)]
+            if len(coins)>0:
+                q_values = [self.q_table[state[0], state[1], coin[0], coin[1]] for coin in coins]
+                return coins[np.argmax(q_values)]
+            else:
+                return self.end
 
     def update_q_table(self, state, goal, reward, next_state):
         end = [int(item) for item in self.end]
@@ -114,7 +110,7 @@ def get_action_from_key(key):
 
 print("mazed")
 
-env = MazeEnv((5, 5), False, 3, 'human')
+env = MazeEnv((10, 10), False, 5, 'human')
 manager = Manager(env)
 worker = Worker(env)
 
