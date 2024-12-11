@@ -1,3 +1,4 @@
+import enum
 from optparse import Option
 from re import M
 from tkinter.tix import CELL
@@ -13,7 +14,13 @@ from   gymnasium.spaces import Discrete, Dict, Box
 from .generator import reset_maze_config, wilson_maze
 
 import pygame
+pygame.init()
 
+# ----------------------------------------------------------------------------------------------
+# Small Utils
+# ----------------------------------------------------------------------------------------------
+
+def match_coord(a: tuple[int, int], b: tuple[int, int]) -> bool: return a[0] == b[0] and a[1] == b[1]
 def get_optimal_path(maze, start, end):
     start, end = tuple(start), tuple(end)
 
@@ -62,12 +69,22 @@ def get_optimal_path(maze, start, end):
 
     return []
 
-CELL_SIZE: int = 10 # px
+# ----------------------------------------------------------------------------------------------
+# Environment
+# ----------------------------------------------------------------------------------------------
+class CellCodes(enum.IntEnum):
+    WALL    = 0
+    PASSAGE = 1
+    END     = 3
+    COIN    = 5
+    PLAYER  = 7
+
+CELL_SIZE: int = 15 # px
 
 class MazeEnv(gym.Env):
     metadata = {'render.modes': ['human', 'rgb_array']}
     
-    def __init__(self, maze_size: tuple[int, int], key_task: bool = True, coin_task: Optional[int] = None, fixed_maze: bool = True, render_mode: Literal['human', 'rgb-array'] = 'human'):
+    def __init__(self, maze_size: tuple[int, int], key_task: bool = True, coin_task: Optional[int] = None, fixed_maze: bool = True, render_mode: Literal['human', 'rgb-array'] = 'human', render_surface: bool = False):
         """Maze Environment
 
         Args:
@@ -76,6 +93,7 @@ class MazeEnv(gym.Env):
             coin_task (int, optional): Number of coins that are placed in the map. Defaults to None.
             fixed_maze (bool, optional): Wheter the maze is regenerated in each reset or it reuses the same maze. Coins and doors are reused too. Defaults to True
             render_mode (str, optional): Render model ('human' or 'rgb-array')
+            render_surface (bool, optional): Determines if a surface or display are used for rendering. THis only works with `render_mode` equal to 'human'. Defaults to False
         """
         super().__init__()
         # define maze settings
@@ -107,31 +125,45 @@ class MazeEnv(gym.Env):
         self._curr  = self._start
         self._maze  = None
         self._coin_loc = []
+        self._available_coins = []
 
         self.render_mode = render_mode
         if self.render_mode == 'human':
-            pygame.init()
 
             size = self.maze_shape[0] * CELL_SIZE, self.maze_shape[1] * CELL_SIZE
-            self.window = pygame.display.set_mode(size)
-            pygame.display.set_caption("Maze Game")
+            if render_surface:
+                self.window = pygame.Surface(size)
+            else:
+                self.window = pygame.display.set_mode(size)
+                pygame.display.set_caption("Maze Game")
+            self.window_size = size
 
-    def reset(self) -> np.ndarray:
+    def reset(self, random_start: bool = True) -> np.ndarray:
+        """Reset environment to the default state
+
+        Args:
+            random_start (Optional[bool], optional): set the starting coordinate to a random position in the maze. Defaults to True.
+        Returns:
+            np.ndarray: new maze settings
+        """
         if self._maze is None or not self.fixed_maze:
             self._maze = wilson_maze(self.width, self.height)
             self._maze = self.__place_coins(self._maze, self.task_coin)
         else:
             self._maze = reset_maze_config(self._maze)
-            for cy, cx in self._coin_loc: self._maze[cy, cx] = 5
-            self._maze[self._end[1], self._end[0]] = 3
+            for cy, cx in self._coin_loc: self._maze[cy, cx] = int(CellCodes.COIN)
+            self._maze[self._end[1], self._end[0]] = int(CellCodes.END)
+            self._available_coins = self._coin_loc
 
-        # self._curr = self._start
-        #Select a random place as initial state
-        posiciones_posibles = np.argwhere(self._maze == 1)
-        eleccion = posiciones_posibles[random.randint(0, len(posiciones_posibles) - 1)]
-        self._curr = (eleccion[0], eleccion[1])
+        if random_start:
+            posiciones_posibles = np.argwhere(self._maze == 1)
+            eleccion = posiciones_posibles[random.randint(0, len(posiciones_posibles) - 1)]
+            self._curr = (eleccion[0], eleccion[1])
+        else: self._curr = self._start
 
-        return self._maze
+        maze = self._maze.copy()
+        maze[self._curr[1], self._curr[0]] = int(CellCodes.PLAYER)
+        return maze
     
     def __place_coins(self, maze: np.ndarray, number_coins: int) -> np.ndarray:
         w, h = self.maze_shape
@@ -139,16 +171,18 @@ class MazeEnv(gym.Env):
             while True:
                 cx = random.randint(0, w)-1
                 cy = random.randint(0, h)-1
-                if maze[cy, cx] == 1:
+                if maze[cy, cx] == CellCodes.PASSAGE:
                     self._coin_loc.append((cy, cx))
-                    maze[cy, cx] = 5 # add coin
+                    maze[cy, cx] = int(CellCodes.COIN)
                     break
+        
+        self._available_coins = self._coin_loc
         return maze
 
 
-    def step(self, action: int,goal: Optional[tuple[int, int]] = None) -> tuple[np.ndarray, float, bool]: 
+    def step(self, action: int, goal: Optional[tuple[int, int]] = None) -> tuple[np.ndarray, float, bool]: 
         assert 0 <= action <= 3, "The action must be a number between 0 and 3. The mapping is (0: 'right', 1: 'bottom', 2: 'left', 3: 'right')"
-        
+
         # initial reward
         reward = 0
 
@@ -157,32 +191,35 @@ class MazeEnv(gym.Env):
 
         # the state of the env is the full maze. not the movement or place of the player
         new_curr  = (self._curr[0] + movement[0], self._curr[1] + movement[1])
-        if self._maze[new_curr[0], new_curr[1]] == 0: 
+        if self._maze[new_curr[0], new_curr[1]] == CellCodes.WALL: 
             return self._maze, -1, False
         self._curr = new_curr
+        
+        # set dummy goal if not enforced
+        goal = goal or self._curr
 
         # mark player position
         new_state = self._maze.copy()
-        new_state[self._curr[1], self._curr[1]] = 7 
+        new_state[self._curr[1], self._curr[1]] = int(CellCodes.PLAYER) 
 
         # update state
         # coin detection
-        if (self._maze[new_curr[0], new_curr[1]] == 5) and (new_curr[0]==goal[0] and new_curr[1]==goal[1]): #Comprobamos que sea nuestro destino
-            self._maze[new_curr[0], new_curr[1]] = 1 # remove the coin
+        if (self._maze[self._curr[0], self._curr[1]] == CellCodes.COIN) and match_coord(self._curr, goal): #Comprobamos que sea nuestro destino
+            self._available_coins = list(filter(lambda c: c[0] != self._curr[0] and c[1] != self._curr, self._available_coins))
+            self._maze[self._curr[0], self._curr[1]] = int(CellCodes.PASSAGE) # remove the coin
             reward = self.coin_reward
         
         # final state
-        done   = (self._curr[0] == self._end[0]) and (self._curr[1] == self._end[1]) and ((self._maze == 5).sum() == 0) # no coins left
-
+        done   = match_coord(self._curr, self._end) and (len(self._available_coins) == 0) # no coins left
         reward = reward if not done else 100
-        return new_state, reward, done
-
+        return new_state, reward, done, False, {}
+    
     def get_current_position(self) -> tuple[int, int]: 
         """Player Position in the maze"""
         return self._curr 
 
     def get_coin_position(self) -> list[tuple[int, int]]: 
-        """Player Position in the maze"""
+        """Coin Location in the maze"""
         return self._coin_loc 
     
     def render(self, mode: str = None):
@@ -225,4 +262,3 @@ class MazeEnv(gym.Env):
         current = (self._curr[1] * CELL_SIZE + CELL_SIZE // 2, self._curr[0] * CELL_SIZE + CELL_SIZE // 2)
         pygame.draw.circle(self.window, "blue", current, CELL_SIZE // 2, 0)
         pygame.display.flip()
-

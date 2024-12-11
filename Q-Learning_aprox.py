@@ -137,7 +137,7 @@ for i in range(episodios_usuario):
             elif event.type == pygame.KEYDOWN:
                 action = get_action_from_key(event.key)
                 if action is not None:
-                    _, reward, done = env.step(action,goal)
+                    _, reward, done, _, _ = env.step(action,goal)
                     next_state = env.get_current_position()
                     reward = 1 if reward<1 else reward
                     worker.update_q_table(state, action, reward, next_state,goal)
@@ -176,7 +176,7 @@ for i in range(episodios_agente):
     # Iteración por pasos
     while not done and movimientos < 150:
         action = worker.select_action(state, goal)
-        _, reward, done = env.step(action,goal)
+        _, reward, done, _, _ = env.step(action,goal)
         next_state = env.get_current_position()
         
         worker.update_q_table(state, action, reward, next_state,goal)
@@ -193,14 +193,14 @@ for i in range(episodios_agente):
 env.close()
 
 #Probar la eficiencia de la politica
-_ = env.reset()
+_ = env.reset(False)
 state = env.get_current_position()
 done = False
 goal = manager.select_goal(state)  # El manager selecciona el objetivo al inicio del episodio
 print(f"Objetivo: {goal}")
 while not done:
     action = worker.select_action(state, goal)
-    _, reward, done = env.step(action,goal)
+    _, reward, done, _, _ = env.step(action,goal)
     next_state = env.get_current_position()
     
     state = next_state
