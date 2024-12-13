@@ -72,42 +72,38 @@ for episode in range(num_episodes):
 
     while not done:
         if t % goal_update_interval == 0:
-            goal, manager_hidden = manager(state, manager_hidden)
+            goal, manager_hidden = manager(state.detach(), manager_hidden.detach())
             goal = goal.detach()
             manager_goals.append(goal)
 
-        action_logits, worker_hidden = worker(state, goal, worker_hidden)
+        action_logits, worker_hidden = worker(
+            state.detach(), goal.detach(), worker_hidden.detach()
+        )
         action = torch.argmax(action_logits).item()
 
-        # Validate action range
-        assert (
-            0 <= action < action_dim
-        ), f"Invalid action index: {action}, expected in range 0 to {action_dim-1}"
+        assert 0 <= action < action_dim, f"Invalid action index: {action}"
 
-        if action is not None:
-            result = env.step(action)
-            if len(result) == 3:
-                next_state, reward, done = result
-                info = {}
-            else:
-                next_state, reward, done, _, info = result
+        result = env.step(action)
+        next_state, reward, done = result[:3]
+        next_state = (
+            torch.tensor(next_state, dtype=torch.float32).flatten().unsqueeze(0)
+        )
 
-            next_state = (
-                torch.tensor(next_state, dtype=torch.float32).flatten().unsqueeze(0)
-            )
+        # Update Worker
+        worker_loss = worker_loss_func(
+            action_logits, torch.tensor([action], dtype=torch.long)
+        )
+        worker_optimizer.zero_grad()
+        worker_loss.backward()
+        worker_optimizer.step()
 
-            # Update Worker
-            worker_loss = worker_loss_func(
-                action_logits, torch.tensor([action], dtype=torch.long)
-            )
-            worker_optimizer.zero_grad()
-            worker_loss.backward()
-            worker_optimizer.step()
+        worker_rewards.append(reward)
+        state = next_state
+        t += 1
 
-            # Track rewards
-            worker_rewards.append(reward)
-            state = next_state
-            t += 1
+    # Detach hidden states after each episode
+    manager_hidden = manager_hidden.detach()
+    worker_hidden = worker_hidden.detach()
 
     # Update Manager
     manager_reward = torch.tensor(worker_rewards, dtype=torch.float32).sum().item() * (
@@ -119,5 +115,6 @@ for episode in range(num_episodes):
     manager_optimizer.step()
 
     print(f"Episode {episode + 1}/{num_episodes}, Reward: {sum(worker_rewards)}")
+
 
 print("Training complete.")
