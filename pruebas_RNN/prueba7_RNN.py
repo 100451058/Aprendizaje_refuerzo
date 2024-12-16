@@ -30,7 +30,9 @@ class Worker(nn.Module):
         return action_logits, hidden
 
 # Environment Setup
-env = MazeEnv((15, 15), False, 5, 'human')
+
+maze_shape = (15,15)
+env = MazeEnv(maze_shape, False, 5, 'human')
 state_shape = env.maze_shape
 action_dim = 4
 
@@ -104,7 +106,7 @@ while not done:
     # Check if the worker reached the current coin or maximum iterations
     if current_coin_index >= len(coins) or (int(current_position[0]) == (env.maze_shape[0] - 2) and int(current_position[1]) == (env.maze_shape[1] - 2)):
         print("Scenario complete or maximum iterations reached. Resetting environment.")
-        env = MazeEnv((15, 15), False, 5, 'human')
+        env = MazeEnv(maze_shape, False, 5, 'human')
         state = env.reset()
         state = torch.tensor(state, dtype=torch.float32).flatten().unsqueeze(0)
         manager_hidden = torch.zeros(1, 1, hidden_dim)
