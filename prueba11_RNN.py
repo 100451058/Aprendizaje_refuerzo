@@ -161,7 +161,7 @@ class FuN(nn.Module):
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Inicialización del entorno
-env = MazeEnv((8, 8), False, 3, True, render_mode="rgb-array")
+env = MazeEnv((6, 6), False, 3, True, render_mode="human")
 initial = (
     torch.tensor(env.reset(random_start=True), dtype=torch.float32)
     .unsqueeze(0)
@@ -186,7 +186,17 @@ goals_horizon = torch.zeros(1, horizon + 1, num_actions * 16, device=device)
 
 score = 0
 
-# Bucle de entrenamiento
+
+# Función para calcular los retornos acumulados
+def compute_returns(rewards, gamma=0.99):
+    returns = []
+    R = 0
+    for r in reversed(rewards):
+        R = r + gamma * R
+        returns.insert(0, R)
+    return torch.tensor(returns, dtype=torch.float32)
+
+
 # Bucle de entrenamiento
 for global_steps in range(10000):
     state = (
@@ -203,23 +213,35 @@ for global_steps in range(10000):
     w_cx = torch.zeros(1, num_actions * 16, device=device)
     goals_horizon = torch.zeros(1, horizon + 1, num_actions * 16, device=device)
 
-    score = 0
     done = False
+    score = 0
+    rewards = []
+    policies = []
+    values = []
 
     while not done:
-        with torch.no_grad():
-            policy, goal, goals_horizon, m_lstm, w_lstm, m_value, w_value_ext = net(
-                state, (m_hx, m_cx), (w_hx, w_cx), goals_horizon
-            )
+        # Obtener la política y el valor
+        policy, goal, goals_horizon, m_lstm, w_lstm, m_value, w_value_ext = net(
+            state, (m_hx, m_cx), (w_hx, w_cx), goals_horizon
+        )
 
         # Actualizar memorias LSTM
         m_hx, m_cx = m_lstm
         w_hx, w_cx = w_lstm
 
-        # Seleccionar acción y obtener siguiente estado
-        action = torch.multinomial(policy, 1).item()
+        # Seleccionar acción
+        action = torch.multinomial(policy.detach(), 1).item()
+
+        # Almacenar política y valor para calcular la pérdida más adelante
+        policies.append(policy[0, action])
+        values.append(m_value.detach())
+
+        # Tomar acción en el entorno
         next_state, reward, done = env.step(action)
-        next_state = (
+        rewards.append(reward)
+
+        # Actualizar el estado
+        state = (
             torch.tensor(next_state, dtype=torch.float32)
             .unsqueeze(0)
             .unsqueeze(0)
@@ -227,6 +249,24 @@ for global_steps in range(10000):
         )
 
         score += reward
-        state = next_state
+        env.render()
 
-    print(f"Steps: {global_steps} | Score: {score}")
+    # Calcular retornos acumulados
+    returns = compute_returns(rewards).to(device)
+    values = torch.cat(values).squeeze()
+
+    # Calcular pérdidas
+    policy_loss = 0
+    value_loss = F.mse_loss(values.detach(), returns.detach())
+    for log_prob, R, value in zip(policies, returns.detach(), values.detach()):
+        advantage = R - value
+        policy_loss += -log_prob * advantage.detach()  # Pérdida de política
+
+    loss = policy_loss + 0.5 * value_loss
+
+    # Retropropagación
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+    print(f"Episode: {global_steps + 1} | Score: {score:.2f} | Loss: {loss.item():.4f}")
