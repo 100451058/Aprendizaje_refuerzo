@@ -13,6 +13,13 @@ import time
 import torch
 import torch.nn.functional as F
 
+# Variables globales
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+M_GAMMA = 0.99
+W_GAMMA = 0.99
+HORIZON = 5
+CLIP_GRAD_NORM = 0.5
+
 
 class Perception(nn.Module):
     def __init__(self, shape: tuple[int, int], action_space: int = 4) -> None:
@@ -46,9 +53,7 @@ class Manager(nn.Module):
         super(Manager, self).__init__()
 
         hidden_size = num_actions * 16
-        self.device = device  # Guardamos el dispositivo
-
-        # Inicializar las memorias en el dispositivo correcto
+        self.device = device
         self.hx_memory = [
             torch.zeros(1, hidden_size, device=device) for _ in range(dilation)
         ]
@@ -76,8 +81,6 @@ class Manager(nn.Module):
         cx_t_1 = self.cx_memory[self.index]
 
         hx, cx = self.lstm(x, (hx_t_1, cx_t_1))
-
-        # Actualizar las memorias
         self.hx_memory[self.index] = hx
         self.cx_memory[self.index] = cx
         self.index = (self.index + 1) % self.horizon
@@ -95,21 +98,18 @@ class Worker(nn.Module):
     def __init__(self, num_actions, device):
         super(Worker, self).__init__()
         self.num_actions = num_actions
-        self.device = device  # Guardamos el dispositivo
+        self.device = device
 
         self.lstm = nn.LSTMCell(num_actions * 16, num_actions * 16)
         self.lstm.bias_ih.data.fill_(0)
         self.lstm.bias_hh.data.fill_(0)
 
         self.fc = nn.Linear(num_actions * 16, 16, bias=False)
-
         self.fc_critic1 = nn.Linear(num_actions * 16, 50)
         self.fc_critic1_out = nn.Linear(50, 1)
-
         self.fc_critic2 = nn.Linear(num_actions * 16, 50)
         self.fc_critic2_out = nn.Linear(50, 1)
 
-        # Inicializar parámetros en el dispositivo correcto
         self.hx_memory = torch.zeros(1, num_actions * 16, device=device)
         self.cx_memory = torch.zeros(1, num_actions * 16, device=device)
 
@@ -161,7 +161,6 @@ class FuN(nn.Module):
         return policy, goal, goals_horizon, m_lstm, w_lstm, m_value, w_value_ext
 
 
-# Función para calcular retornos acumulados
 def get_returns(rewards, masks, gamma, values):
     returns = torch.zeros_like(rewards)
     running_returns = values[-1].squeeze()
@@ -176,44 +175,38 @@ def get_returns(rewards, masks, gamma, values):
     return returns
 
 
-# Función de entrenamiento adaptada
-def train_model(net, optimizer, transition, args):
+def train_model(net, optimizer, transition):
+    actions = torch.tensor(transition.action).long().to(DEVICE).detach()
+    rewards = torch.tensor(transition.reward).to(DEVICE).detach()
+    masks = torch.tensor(transition.mask).to(DEVICE).detach()
+    goals = torch.stack(transition.goal).to(DEVICE).detach()
+    policies = torch.stack(transition.policy).squeeze(1).to(DEVICE).detach()
+    m_states = torch.stack(transition.m_state).to(DEVICE).detach()
+    m_values = torch.stack(transition.m_value).to(DEVICE).detach()
+    w_values_ext = torch.stack(transition.w_value_ext).to(DEVICE).detach()
+    w_values_int = torch.stack(transition.w_value_int).to(DEVICE).detach()
 
-    # Convertir transiciones a tensores
-    actions = torch.tensor(transition.action).long().to(args.device)
-    rewards = torch.tensor(transition.reward).to(args.device)
-    masks = torch.tensor(transition.mask).to(args.device)
-    goals = torch.stack(transition.goal).to(args.device)
-    policies = torch.stack(transition.policy).squeeze(1).to(device)
-    m_states = torch.stack(transition.m_state).to(args.device)
-    m_values = torch.stack(transition.m_value).to(args.device)
-    w_values_ext = torch.stack(transition.w_value_ext).to(args.device)
-    w_values_int = torch.stack(transition.w_value_int).to(args.device)
+    m_returns = get_returns(rewards, masks, M_GAMMA, m_values)
+    w_returns = get_returns(rewards, masks, W_GAMMA, w_values_ext)
 
-    # Calcular retornos extrínsecos e intrínsecos
-    m_returns = get_returns(rewards, masks, args.m_gamma, m_values)
-    w_returns = get_returns(rewards, masks, args.w_gamma, w_values_ext)
-
-    # Calcular recompensas intrínsecas
-    intrinsic_rewards = torch.zeros_like(rewards).to(args.device)
-    for i in range(args.horizon, len(rewards)):
+    intrinsic_rewards = torch.zeros_like(rewards).to(DEVICE).detach()
+    for i in range(HORIZON, len(rewards)):
         cos_sum = 0
-        for j in range(1, args.horizon + 1):
+        for j in range(1, HORIZON + 1):
             alpha = m_states[i] - m_states[i - j]
             beta = goals[i - j]
             cosine_sim = F.cosine_similarity(alpha, beta, dim=-1)
             cos_sum += cosine_sim
-        intrinsic_rewards[i] = (cos_sum / args.horizon).detach()
+        intrinsic_rewards[i] = (cos_sum / HORIZON).detach()
 
-    returns_int = get_returns(intrinsic_rewards, masks, args.w_gamma, w_values_int)
+    returns_int = get_returns(intrinsic_rewards, masks, W_GAMMA, w_values_int)
 
-    # Cálculo de pérdidas
-    m_loss = torch.zeros_like(w_returns).to(args.device)
-    w_loss = torch.zeros_like(m_returns).to(args.device)
+    m_loss = torch.zeros_like(w_returns).to(DEVICE).detach()
+    w_loss = torch.zeros_like(m_returns).to(DEVICE).detach()
 
-    for i in range(0, len(rewards) - args.horizon):
+    for i in range(0, len(rewards) - HORIZON):
         m_advantage = m_returns[i] - m_values[i].squeeze(-1)
-        alpha = m_states[i + args.horizon] - m_states[i]
+        alpha = m_states[i + HORIZON] - m_states[i]
         beta = goals[i]
         cosine_sim = F.cosine_similarity(alpha.detach(), beta, dim=-1)
         m_loss[i] = -m_advantage * cosine_sim
@@ -227,157 +220,126 @@ def train_model(net, optimizer, transition, args):
         log_policy = log_policy.gather(-1, actions[i])
         w_loss[i] = -w_advantage * log_policy.squeeze(-1)
 
-    # Promediar las pérdidas
     m_loss = m_loss.mean()
     w_loss = w_loss.mean()
     m_loss_value = F.mse_loss(m_values.squeeze(-1), m_returns.detach())
     w_loss_value_ext = F.mse_loss(w_values_ext.squeeze(-1), w_returns.detach())
     w_loss_value_int = F.mse_loss(w_values_int.squeeze(-1), returns_int.detach())
 
-    # Combinar las pérdidas
     loss = w_loss + w_loss_value_ext + w_loss_value_int + m_loss + m_loss_value
 
-    # Optimización
     optimizer.zero_grad()
-    loss.backward()
-    torch.nn.utils.clip_grad_norm_(net.parameters(), args.clip_grad_norm)
+    loss.backward(retain_graph=True)
+    torch.nn.utils.clip_grad_norm_(net.parameters(), CLIP_GRAD_NORM).detach()
     optimizer.step()
 
     return loss.item()
 
 
-# Parámetros de configuración
-class Args:
-    def __init__(self):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.m_gamma = 0.99
-        self.w_gamma = 0.99
-        self.horizon = 5
-        self.clip_grad_norm = 0.5
+if __name__ == "__main__":
+    maze_size = (4, 4)
+    env = MazeEnv(maze_size, False, 3, True, render_mode="rgb-array")
+    num_actions = env.action_space.n
+    horizon = 9
 
-
-args = Args()
-
-
-# Definir el dispositivo
-device = args.device
-maze_size = (4, 4)
-# Inicialización del entorno
-env = MazeEnv(maze_size, False, 3, True, render_mode="rgb-array")
-num_actions = env.action_space.n
-horizon = 9
-initial = (
-    torch.tensor(env.reset(random_start=True), dtype=torch.float32)
-    .unsqueeze(0)
-    .unsqueeze(0)
-    .to(device)
-)
-
-H, W = initial.shape[2], initial.shape[3]
-
-# Transición
-Transition = namedtuple(
-    "Transition",
-    [
-        "action",
-        "reward",
-        "mask",
-        "goal",
-        "policy",
-        "m_state",
-        "m_value",
-        "w_value_ext",
-        "w_value_int",
-    ],
-)
-
-# Inicializar red
-net = FuN((H, W), num_actions, horizon, device).to(device)
-optimizer = torch.optim.RMSprop(net.parameters(), lr=0.00025, eps=0.01)
-
-# Entrenamiento
-# Flujo de entrenamiento adaptado a FeUdal Networks
-for global_steps in range(10000):
-    state = (
+    initial = (
         torch.tensor(env.reset(random_start=True), dtype=torch.float32)
         .unsqueeze(0)
         .unsqueeze(0)
-        .to(device)
+        .to(DEVICE)
     )
 
-    # Reiniciar memorias LSTM
-    m_hx, m_cx = torch.zeros(1, num_actions * 16, device=device), torch.zeros(
-        1, num_actions * 16, device=device
+    H, W = initial.shape[2], initial.shape[3]
+
+    Transition = namedtuple(
+        "Transition",
+        [
+            "action",
+            "reward",
+            "mask",
+            "goal",
+            "policy",
+            "m_state",
+            "m_value",
+            "w_value_ext",
+            "w_value_int",
+        ],
     )
-    w_hx, w_cx = torch.zeros(1, num_actions * 16, device=device), torch.zeros(
-        1, num_actions * 16, device=device
-    )
-    goals_horizon = torch.zeros(1, horizon + 1, num_actions * 16, device=device)
 
-    transitions = []
-    done = False
-    step_count = 0
+    net = FuN((H, W), num_actions, horizon, DEVICE).to(DEVICE)
+    optimizer = torch.optim.RMSprop(net.parameters(), lr=0.00025, eps=0.01)
 
-    # El Manager define su primer goal
-    with torch.no_grad():
-        _, goal, goals_horizon, m_lstm, _, m_value, _ = net(
-            state, (m_hx, m_cx), (w_hx, w_cx), goals_horizon
-        )
-
-    while not done:
-        step_count += 1
-
-        # Obtener la política y valores actuales
-        with torch.no_grad():
-            policy, _, goals_horizon, m_lstm, w_lstm, m_value, w_value_ext = net(
-                state, m_lstm, (w_hx, w_cx), goals_horizon
-            )
-
-        # Seleccionar acción
-        action = torch.multinomial(policy, 1).item()
-        next_state, reward_ext, done = env.step(action)
-
-        # Calcular recompensa intrínseca basada en la similitud coseno
-        with torch.no_grad():
-            state_diff = m_lstm[0] - m_hx  # Progreso observado
-            cosine_sim = F.cosine_similarity(state_diff, goal, dim=-1)
-            reward_int = cosine_sim.item()
-
-        # Recompensa total
-        total_reward = reward_ext + reward_int
-
-        # Registrar transición
-        mask = 0 if done else 1
-        transitions.append(
-            Transition(
-                action,
-                total_reward,
-                mask,
-                goal,
-                policy,
-                m_lstm[0],
-                m_value,
-                w_value_ext,
-                w_value_ext,
-            )
-        )
-
-        # Actualizar el estado
+    for global_steps in range(10000):
         state = (
-            torch.tensor(next_state, dtype=torch.float32)
+            torch.tensor(env.reset(random_start=True), dtype=torch.float32)
             .unsqueeze(0)
             .unsqueeze(0)
-            .to(device)
+            .to(DEVICE)
         )
-        m_hx, m_cx = m_lstm  # Actualizar memoria Manager
-        w_hx, w_cx = w_lstm  # Actualizar memoria Worker
 
-        # Actualizar el goal del Manager cada horizonte
-        if step_count % args.horizon == 0:
+        m_hx, m_cx = torch.zeros(1, num_actions * 16, device=DEVICE), torch.zeros(
+            1, num_actions * 16, device=DEVICE
+        )
+        w_hx, w_cx = torch.zeros(1, num_actions * 16, device=DEVICE), torch.zeros(
+            1, num_actions * 16, device=DEVICE
+        )
+        goals_horizon = torch.zeros(1, HORIZON + 1, num_actions * 16, device=DEVICE)
+
+        transitions = []
+        done = False
+        step_count = 0
+
+        with torch.no_grad():
             _, goal, goals_horizon, m_lstm, _, m_value, _ = net(
-                state, m_lstm, (w_hx, w_cx), goals_horizon
+                state, (m_hx, m_cx), (w_hx, w_cx), goals_horizon
             )
 
-    # Entrenamiento del modelo después del episodio
-    loss = train_model(net, optimizer, Transition(*zip(*transitions)), args)
-    print(f"Episode: {global_steps + 1} | Loss: {loss:.4f}")
+        while not done:
+            step_count += 1
+
+            with torch.no_grad():
+                policy, _, goals_horizon, m_lstm, w_lstm, m_value, w_value_ext = net(
+                    state.detach(), m_lstm, (w_hx, w_cx), goals_horizon
+                )
+
+            action = torch.multinomial(policy, 1).item()
+            next_state, reward_ext, done = env.step(action)
+
+            with torch.no_grad():
+                state_diff = m_lstm[0] - m_hx
+                cosine_sim = F.cosine_similarity(state_diff, goal, dim=-1)
+                reward_int = cosine_sim.item()
+
+            total_reward = reward_ext + reward_int
+
+            mask = 0 if done else 1
+            transitions.append(
+                Transition(
+                    action,
+                    total_reward,
+                    mask,
+                    goal,
+                    policy,
+                    m_lstm[0],
+                    m_value,
+                    w_value_ext,
+                    w_value_ext,
+                )
+            )
+
+            state = (
+                torch.tensor(next_state, dtype=torch.float32)
+                .unsqueeze(0)
+                .unsqueeze(0)
+                .to(DEVICE)
+            ).detach()
+            m_hx, m_cx = m_lstm
+            w_hx, w_cx = w_lstm
+
+            if step_count % HORIZON == 0:
+                _, goal, goals_horizon, m_lstm, _, m_value, _ = net(
+                    state.detach(), m_lstm, (w_hx, w_cx), goals_horizon
+                )
+
+        loss = train_model(net, optimizer, Transition(*zip(*transitions)))
+        print(f"Episode: {global_steps + 1} | Loss: {loss:.4f}")
