@@ -154,7 +154,7 @@ for i in range(episodios_usuario):
             elif event.type == pygame.KEYDOWN:
                 action = get_action_from_key(event.key)
                 if action is not None:
-                    _, reward, done = env.step(action,goal)
+                    _, reward, done, _, _ = env.step(action,goal)
                     next_state = env.get_current_position()
                     reward = 1 if reward<1 else reward
                     worker.update_q_table(state, action, reward, next_state,goal,0)
@@ -195,7 +195,6 @@ for i in tqdm(range(episodios_agente)):
     while not done and movimientos < 500:
         action = worker.select_action(state, goal)
         _, reward, done = env.step(action,goal)
-        reward_acumulado += reward
         next_state = env.get_current_position()
         
         worker.update_q_table(state, action, reward, next_state,goal,movimientos)
@@ -223,41 +222,31 @@ for i in tqdm(range(episodios_agente)):
 
 env.close()
 
-# Resultados del aprendizaje
-print("Porcentaje de episodios completados: ", eginak/episodios_agente)
-
+#Probar la eficiencia de la politica
+_ = env.reset()
+state = env.get_current_position()
+comienzo = state
+done = False
+goal = manager.select_goal(state)  # El manager selecciona el objetivo al inicio del episodio
+print(f"Objetivo: {goal}")
 logros = 0
-comienzos_buenos = []
-worker.epsilon = 0
-for i in range(episodios_test):
-    #Probar la eficiencia de la politica
-    if(np.random.rand() < 0.5):
-        _ = env.reset()
-    else:
-        _ = env.reset((1,1))
-    state = env.get_current_position()
-    comienzo = state
-    done = False
-    goal = manager.select_goal(state)  # El manager selecciona el objetivo al inicio del episodio
-    movimientos = 0
-    while not done and movimientos < 300:
-        action = worker.select_action(state, goal)
-        _, reward, done = env.step(action,goal)
-        next_state = env.get_current_position()
-        
-        state = next_state
-        env.render()
+while not done:
+    action = worker.select_action(state, goal)
+    _, reward, done = env.step(action,goal)
+    next_state = env.get_current_position()
+    
+    state = next_state
+    env.render()
+    # print(f"Estado: {state}, Recompensa: {reward}, Objetivo: {goal}")
 
-        movimientos+=1
-
-        # Si se alcanza el objetivo, selecciona un nuevo objetivo
-        if np.array_equal(state, goal):
-            goal = manager.select_goal(state)
-        
-        if(done):
-            print("SE LOGRO ENCONTRAR EL CAMINO OPTIMO")
-            logros+=1
-            comienzos_buenos.append(comienzo)
+    # Si se alcanza el objetivo, selecciona un nuevo objetivo
+    if np.array_equal(state, goal):
+        goal = manager.select_goal(state)
+    
+    if(done):
+        print("SE LOGRO ENCONTRAR EL CAMINO OPTIMO")
+        logros+=1
+        comienzos_buenos.append(comienzo)
 
 print("Porcentaje de eficiencia de la política: ", 100*(logros/episodios_test))
 
