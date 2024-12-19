@@ -9,6 +9,9 @@ from src.maze import MazeEnv
 from tensorboardX import SummaryWriter
 import keyboard  # Biblioteca para capturar las teclas
 import time
+import copy
+import matplotlib.animation as animation
+from IPython.display import HTML, display
 
 
 class Perception(nn.Module):
@@ -161,7 +164,7 @@ class FuN(nn.Module):
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Inicialización del entorno
-env = MazeEnv((6, 6), False, 3, True, render_mode="human")
+env = MazeEnv((6, 6), False, 3, True, render_mode="rgb-array")
 initial = (
     torch.tensor(env.reset(random_start=True), dtype=torch.float32)
     .unsqueeze(0)
@@ -197,8 +200,12 @@ def compute_returns(rewards, gamma=0.99):
     return torch.tensor(returns, dtype=torch.float32)
 
 
+images = [env.render()]
+real = False
 # Bucle de entrenamiento
-for global_steps in range(10000):
+for global_steps in range(100):
+    if real == True:
+        break
     state = (
         torch.tensor(env.reset(random_start=True), dtype=torch.float32)
         .unsqueeze(0)
@@ -219,7 +226,8 @@ for global_steps in range(10000):
     policies = []
     values = []
     iterations = 0
-
+    real = True
+    images = []
     while not done:
         # Obtener la política y el valor
         policy, goal, goals_horizon, m_lstm, w_lstm, m_value, w_value_ext = net(
@@ -238,7 +246,7 @@ for global_steps in range(10000):
         values.append(m_value.detach())
 
         # Tomar acción en el entorno
-        next_state, reward, done = env.step(action)
+        next_state, reward, done, _, _ = env.step(action)
         rewards.append(reward)
 
         # Actualizar el estado
@@ -253,7 +261,9 @@ for global_steps in range(10000):
         iterations += 1
         if iterations > 2000:
             done = True
-        env.render()
+            real = False
+        # env.render()
+        images.append(env.render())
 
     # Calcular retornos acumulados
     returns = compute_returns(rewards).to(device)
@@ -274,3 +284,28 @@ for global_steps in range(10000):
     optimizer.step()
 
     print(f"Episode: {global_steps + 1} | Score: {score:.2f} | Loss: {loss.item():.4f}")
+
+
+fig, ax = plt.subplots()
+img = ax.imshow(images[0])
+ax.axis("off")
+title = ax.set_title("selected goal: ")
+
+
+def animate(frame):
+    img.set_array(images[frame])
+    return img, title
+
+
+ani = animation.FuncAnimation(
+    fig, animate, frames=len(images), interval=150, blit=True, repeat_delay=1000
+)
+print("animation created")
+
+writer = animation.PillowWriter(
+    fps=24, metadata=dict(artist="Rubén Cid, Aimar Nicuesa, Daniel Obreo"), bitrate=1800
+)
+ani.save(f"FuN.gif", writer=writer)
+print("animation saved")
+
+display(HTML(ani.to_jshtml(default_mode="once")))

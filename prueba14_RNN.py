@@ -187,7 +187,6 @@ goals_horizon = torch.zeros(1, horizon + 1, num_actions * 16, device=device)
 score = 0
 
 
-# Función para calcular los retornos acumulados
 def compute_returns(rewards, gamma=0.99):
     returns = []
     R = 0
@@ -197,80 +196,176 @@ def compute_returns(rewards, gamma=0.99):
     return torch.tensor(returns, dtype=torch.float32)
 
 
-# Bucle de entrenamiento
+def compute_advantages(rewards, values, gamma=0.99):
+    """
+    Calcula los retornos descontados y las ventajas.
+    - rewards: lista de recompensas acumuladas.
+    - values: tensores de valores en el mismo dispositivo.
+    - gamma: factor de descuento.
+    """
+    returns = compute_returns(rewards, gamma).to(
+        values.device
+    )  # Mover returns al mismo dispositivo que values
+    advantages = returns - values
+    return returns, advantages
+
+
+def manhattan_distance(pos1, pos2):
+    return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
+
+
+def calculate_rewards(state, visited_states, coin_positions, exit_position, env):
+    """
+    Calcula recompensas para el Worker y el Manager.
+    - state: matriz numpy del laberinto.
+    - visited_states: conjunto de estados visitados previamente.
+    - coin_positions: posiciones fijas de las monedas.
+    - exit_position: posición fija de la salida.
+    """
+    reward_worker = 0
+    reward_manager = 0
+
+    # Convertir estado a formato hashable
+    state_bytes = state.tobytes()
+
+    """# Castigo por visitar estados repetidos
+    if state_bytes in visited_states:
+        reward_worker -= 2.0  # Castigo por estados repetidos
+    else:
+        reward_worker += 1  # Recompensa por estado nuevo
+        visited_states.add(state_bytes)"""
+
+    player_pos = env.get_current_position()
+
+    # Extraer posición actual del jugador
+    # player_pos = tuple(np.argwhere(state == 7)[0])
+
+    # Recompensa por recoger una moneda
+    if player_pos in coin_positions:
+        reward_worker += 30.0  # Recompensa positiva
+        coin_positions.remove(player_pos)  # Eliminar moneda recogida
+
+    """# Castigo por la distancia a las monedas restantes
+    if len(coin_positions) > 0:
+        min_distance = min(
+            manhattan_distance(player_pos, coin) for coin in coin_positions
+        )
+        reward_worker -= 0.1 * min_distance"""
+
+    # Recompensa/penalización del Manager
+    if player_pos == exit_position and len(coin_positions) == 0:
+        reward_manager += 40.0  # Recompensa para llegar a la salida
+
+    return reward_worker, reward_manager
+
+
+# Inicialización del historial de estados visitados
+visited_states = set()
+
 for global_steps in range(10000):
+    # Reiniciar entorno y variables al inicio del episodio
+    initial_state = env.reset(random_start=True)
     state = (
-        torch.tensor(env.reset(random_start=True), dtype=torch.float32)
+        torch.tensor(initial_state, dtype=torch.float32)
         .unsqueeze(0)
         .unsqueeze(0)
-        .to(device)
+        .to(device)  # Asegurar que el estado esté en el dispositivo correcto
     )
 
-    # Reiniciar memorias LSTM al inicio del episodio
+    # Guardar posiciones iniciales de monedas y salida
+    initial_state_np = initial_state
+    coin_positions = [tuple(pos) for pos in np.argwhere(initial_state_np == 5)]
+    exit_position = tuple(np.argwhere(initial_state_np == 3)[0])
+
+    # Inicializar memorias en el dispositivo
     m_hx = torch.zeros(1, num_actions * 16, device=device)
     m_cx = torch.zeros(1, num_actions * 16, device=device)
     w_hx = torch.zeros(1, num_actions * 16, device=device)
     w_cx = torch.zeros(1, num_actions * 16, device=device)
     goals_horizon = torch.zeros(1, horizon + 1, num_actions * 16, device=device)
 
-    done = False
-    score = 0
-    rewards = []
-    policies = []
-    values = []
-    iterations = 0
+    rewards_worker, rewards_manager = [], []
+    policies, values_worker, values_manager = [], [], []
+    score_worker, score_manager = 0, 0
 
+    visited_states.clear()
+    done = False
+    iterations = 0
     while not done:
-        # Obtener la política y el valor
+        # Obtener política y valores
         policy, goal, goals_horizon, m_lstm, w_lstm, m_value, w_value_ext = net(
             state, (m_hx, m_cx), (w_hx, w_cx), goals_horizon
         )
-
-        # Actualizar memorias LSTM
         m_hx, m_cx = m_lstm
         w_hx, w_cx = w_lstm
 
         # Seleccionar acción
         action = torch.multinomial(policy.detach(), 1).item()
 
-        # Almacenar política y valor para calcular la pérdida más adelante
-        policies.append(policy[0, action])
-        values.append(m_value.detach())
-
         # Tomar acción en el entorno
-        next_state, reward, done = env.step(action)
-        rewards.append(reward)
+        next_state, _, done = env.step(action)
 
-        # Actualizar el estado
-        state = (
+        # Convertir next_state al dispositivo correcto
+        next_state = (
             torch.tensor(next_state, dtype=torch.float32)
             .unsqueeze(0)
             .unsqueeze(0)
-            .to(device)
+            .to(device)  # Asegurar que esté en el dispositivo correcto
         )
 
-        score += reward
+        # Calcular recompensas
+        reward_worker, reward_manager = calculate_rewards(
+            next_state.cpu().numpy(), visited_states, coin_positions, exit_position, env
+        )
+
+        # Acumular recompensas
+        rewards_worker.append(reward_worker)
+        rewards_manager.append(reward_manager)
+        policies.append(policy[0, action])
+        values_worker.append(w_value_ext)
+        values_manager.append(m_value)
+
+        # Actualizar el estado
+        state = next_state
+        score_worker += reward_worker
+        score_manager += reward_manager
         iterations += 1
         if iterations > 2000:
             done = True
         env.render()
 
-    # Calcular retornos acumulados
-    returns = compute_returns(rewards).to(device)
-    values = torch.cat(values).squeeze()
+    # Calcular retornos y ventajas
+    # Calcular retornos y ventajas
+    returns_worker, advantages_worker = compute_advantages(
+        rewards_worker, torch.cat(values_worker).squeeze()
+    )
+    returns_manager, advantages_manager = compute_advantages(
+        rewards_manager, torch.cat(values_manager).squeeze()
+    )
 
     # Calcular pérdidas
     policy_loss = 0
-    value_loss = F.mse_loss(values.detach(), returns.detach())
-    for log_prob, R, value in zip(policies, returns.detach(), values.detach()):
-        advantage = R - value
-        policy_loss += -log_prob * advantage.detach()  # Pérdida de política
+    value_loss_worker = F.mse_loss(
+        torch.cat(values_worker).to(device), returns_worker.unsqueeze(1)
+    )
+    value_loss_manager = F.mse_loss(
+        torch.cat(values_manager).to(device), returns_manager.unsqueeze(1)
+    )
 
-    loss = policy_loss + 0.5 * value_loss
+    for log_prob, adv_worker, adv_manager in zip(
+        policies, advantages_worker, advantages_manager
+    ):
+        policy_loss += -log_prob.to(device) * (adv_worker + adv_manager).detach()
+
+    total_loss = policy_loss + 0.5 * (value_loss_worker + value_loss_manager)
 
     # Retropropagación
     optimizer.zero_grad()
-    loss.backward()
+    total_loss.backward(retain_graph=True)
     optimizer.step()
 
-    print(f"Episode: {global_steps + 1} | Score: {score:.2f} | Loss: {loss.item():.4f}")
+    # Imprimir resultados
+    print(
+        f"Episode: {global_steps + 1} | Worker Score: {score_worker:.2f} | "
+        f"Manager Score: {score_manager:.2f} | Loss: {total_loss.item():.4f}"
+    )

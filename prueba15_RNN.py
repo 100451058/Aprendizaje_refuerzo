@@ -9,6 +9,7 @@ from src.maze import MazeEnv
 from tensorboardX import SummaryWriter
 import keyboard  # Biblioteca para capturar las teclas
 import time
+from collections import deque
 
 
 class Perception(nn.Module):
@@ -187,7 +188,6 @@ goals_horizon = torch.zeros(1, horizon + 1, num_actions * 16, device=device)
 score = 0
 
 
-# Función para calcular los retornos acumulados
 def compute_returns(rewards, gamma=0.99):
     returns = []
     R = 0
@@ -197,49 +197,166 @@ def compute_returns(rewards, gamma=0.99):
     return torch.tensor(returns, dtype=torch.float32)
 
 
-# Bucle de entrenamiento
+def compute_advantages(rewards, values, gamma=0.99):
+    """
+    Calcula los retornos descontados y las ventajas.
+    - rewards: lista de recompensas acumuladas.
+    - values: tensores de valores en el mismo dispositivo.
+    - gamma: factor de descuento.
+    """
+    returns = compute_returns(rewards, gamma).to(
+        values.device
+    )  # Mover returns al mismo dispositivo que values
+    advantages = returns - values
+    return returns, advantages
+
+
+def manhattan_distance(pos1, pos2):
+    return abs(pos1[0] - pos2[0]) + abs(pos1[1] - pos2[1])
+
+
+def bfs_shortest_path(grid, start, goal):
+    """
+    Calcula el número de espacios transitables ('1') en el camino más corto desde start hasta goal.
+    - grid: matriz numpy del laberinto.
+    - start: posición inicial (agente).
+    - goal: posición del objetivo (moneda o salida).
+    """
+    rows, cols = grid.shape
+    visited = set()
+    queue = deque([(start, 0)])  # (posición actual, número de pasos)
+
+    while queue:
+        (x, y), steps = queue.popleft()
+
+        if (x, y) == goal:
+            return steps  # Número de espacios transitables en el camino más corto
+
+        for dx, dy in [
+            (-1, 0),
+            (1, 0),
+            (0, -1),
+            (0, 1),
+        ]:  # Movimientos arriba, abajo, izq, der
+            nx, ny = x + dx, y + dy
+            if (
+                0 <= nx < rows
+                and 0 <= ny < cols
+                and grid[nx, ny] == 1
+                and (nx, ny) not in visited
+            ):
+                visited.add((nx, ny))
+                queue.append(((nx, ny), steps + 1))
+
+    return float("inf")  # Si no se puede alcanzar el objetivo
+
+
+def calculate_rewards(
+    env, state, visited_states, coin_positions, exit_position, prev_distance
+):
+    """
+    Calcula recompensas y penalizaciones:
+    - Recoge monedas (+10).
+    - Llega a la salida (+20).
+    - Acercarse al objetivo más cercano (+2).
+    - Alejarse del objetivo (-2).
+    - No recompensa por acercarse a monedas ya recogidas.
+    """
+    reward_worker = 0
+
+    # Obtener la posición actual del jugador usando env.get_current_position()
+    player_pos = env.get_current_position()
+
+    # Convertir estado a formato hashable para controlar estados repetidos
+    """state_bytes = state.tobytes()
+    if state_bytes in visited_states:
+        reward_worker -= 1.0  # Castigo por estados repetidos
+    else:
+        reward_worker += 0.5  # Recompensa por estado nuevo
+        visited_states.add(state_bytes)"""
+
+    # Recompensa por recoger una moneda
+    if player_pos in coin_positions:
+        reward_worker += 10.0  # Recompensa por recoger moneda
+        coin_positions.remove(player_pos)  # Eliminar moneda recogida
+
+    # Recompensa por llegar a la salida
+    if player_pos == exit_position and len(coin_positions) == 0:
+        reward_worker += 20.0  # Recompensa positiva al alcanzar la salida
+
+    """# Calcular la distancia actual al objetivo más cercano (solo monedas restantes y salida)
+    all_targets = coin_positions + [exit_position]
+    if len(all_targets) > 0:
+        current_distance = min(
+            bfs_shortest_path(state, player_pos, target) for target in all_targets
+        )
+
+        # Comparar con la distancia anterior
+        if current_distance < prev_distance:
+            reward_worker += 2.0  # Recompensa por acercarse
+        elif current_distance > prev_distance:
+            reward_worker -= 2.0  # Penalización por alejarse
+
+        prev_distance = current_distance  # Actualizar la distancia previa"""
+
+    return reward_worker, prev_distance
+
+
+# Inicialización del historial de estados visitados
+visited_states = set()
+
 for global_steps in range(10000):
+    initial_state = env.reset(random_start=True)
     state = (
-        torch.tensor(env.reset(random_start=True), dtype=torch.float32)
+        torch.tensor(initial_state, dtype=torch.float32)
         .unsqueeze(0)
         .unsqueeze(0)
         .to(device)
     )
 
-    # Reiniciar memorias LSTM al inicio del episodio
-    m_hx = torch.zeros(1, num_actions * 16, device=device)
-    m_cx = torch.zeros(1, num_actions * 16, device=device)
-    w_hx = torch.zeros(1, num_actions * 16, device=device)
-    w_cx = torch.zeros(1, num_actions * 16, device=device)
-    goals_horizon = torch.zeros(1, horizon + 1, num_actions * 16, device=device)
+    # Guardar posiciones iniciales de monedas y salida
+    initial_state_np = initial_state
+    coin_positions = [tuple(pos) for pos in np.argwhere(initial_state_np == 5)]
+    exit_position = tuple(np.argwhere(initial_state_np == 3)[0])
+
+    visited_states = set()
+    rewards_worker = []
+    score_worker = 0
+
+    # Inicializar distancia previa
+    player_pos = env.get_current_position()
+    all_targets = coin_positions + [exit_position]
+    prev_distance = min(
+        bfs_shortest_path(initial_state_np, player_pos, target)
+        for target in all_targets
+    )
 
     done = False
-    score = 0
-    rewards = []
-    policies = []
-    values = []
     iterations = 0
-
     while not done:
-        # Obtener la política y el valor
+        # Obtener política y valores
         policy, goal, goals_horizon, m_lstm, w_lstm, m_value, w_value_ext = net(
             state, (m_hx, m_cx), (w_hx, w_cx), goals_horizon
         )
 
-        # Actualizar memorias LSTM
-        m_hx, m_cx = m_lstm
-        w_hx, w_cx = w_lstm
-
         # Seleccionar acción
         action = torch.multinomial(policy.detach(), 1).item()
 
-        # Almacenar política y valor para calcular la pérdida más adelante
-        policies.append(policy[0, action])
-        values.append(m_value.detach())
-
         # Tomar acción en el entorno
-        next_state, reward, done = env.step(action)
-        rewards.append(reward)
+        next_state, _, done = env.step(action)
+
+        # Calcular recompensa y actualizar distancia previa
+        reward_worker, prev_distance = calculate_rewards(
+            env,
+            next_state,
+            visited_states,
+            coin_positions,
+            exit_position,
+            prev_distance,
+        )
+
+        # Acumular recompensas
+        rewards_worker.append(reward_worker)
 
         # Actualizar el estado
         state = (
@@ -248,29 +365,12 @@ for global_steps in range(10000):
             .unsqueeze(0)
             .to(device)
         )
-
-        score += reward
+        score_worker += reward_worker
         iterations += 1
-        if iterations > 2000:
+
+        if iterations > 5000:
             done = True
+
         env.render()
 
-    # Calcular retornos acumulados
-    returns = compute_returns(rewards).to(device)
-    values = torch.cat(values).squeeze()
-
-    # Calcular pérdidas
-    policy_loss = 0
-    value_loss = F.mse_loss(values.detach(), returns.detach())
-    for log_prob, R, value in zip(policies, returns.detach(), values.detach()):
-        advantage = R - value
-        policy_loss += -log_prob * advantage.detach()  # Pérdida de política
-
-    loss = policy_loss + 0.5 * value_loss
-
-    # Retropropagación
-    optimizer.zero_grad()
-    loss.backward()
-    optimizer.step()
-
-    print(f"Episode: {global_steps + 1} | Score: {score:.2f} | Loss: {loss.item():.4f}")
+    print(f"Episode: {global_steps + 1} | Worker Score: {score_worker:.2f}")
