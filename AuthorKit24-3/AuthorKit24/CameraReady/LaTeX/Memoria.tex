@@ -88,64 +88,21 @@
 % Title
 
 % Your title must be in mixed case, not sentence case.
-% That means all verbs (including short verbs like be, is, using,and go),
-% nouns, adverbs, adjectives should be capitalized, including both words in hyphenated terms, while
-% articles, conjunctions, and prepositions are lower case unless they
-% directly follow a colon or long dash
 \title{Hierarchical Reinforcement Learning: Maze with Tasks}
-\author{
-    %Authors
-    % All authors must be in the same font size and format.
-    Rubén Cid Costa, Aimar Nicuesa Usandizaga, Daniel Obreo Sanz
-}
-\affiliations{
-    %Afiliations
-    Universidad Carlos III de Madrid 
-    % If you have multiple authors and multiple affiliations
-    % use superscripts in text and roman font to identify them.
-    % For example,
-
-    % Sunil Issar\textsuperscript{\rm 2}, 
-    % J. Scott Penberthy\textsuperscript{\rm 3}, 
-    % George Ferguson\textsuperscript{\rm 4},
-    % Hans Guesgen\textsuperscript{\rm 5}
-    % Note that the comma should be placed after the superscript
-
-    Ronda de Toledo, 1. 28005 Madrid (Madrid). Spain
-    % email address must be in roman text type, not monospace or sans serif
-%
-% See more examples next
-}
-
-%Example, Single Author, ->> remove \iffalse,\fi and place them surrounding AAAI title to use it
-\iffalse
-\title{My Publication Title --- Single Author}
-\author {
-    Author Name
-}
-\affiliations{
-    Affiliation\\
-    Affiliation Line 2\\
-    name@example.com
-}
-\fi
-
-\iffalse
-%Example, Multiple Authors, ->> remove \iffalse,\fi and place them surrounding AAAI title to use it
-\title{My Publication Title --- Multiple Authors}
 \author {
     % Authors
-    First Author Name\textsuperscript{\rm 1,\rm 2},
-    Second Author Name\textsuperscript{\rm 2},
-    Third Author Name\textsuperscript{\rm 1}
+    Rubén Cid Costa\textsuperscript{\rm 1},
+    Aimar Nicuera Usandizaga\textsuperscript{\rm 2},
+    Daniel Obreo Sanz\textsuperscript{\rm 3}
 }
 \affiliations {
     % Affiliations
-    \textsuperscript{\rm 1}Affiliation 1\\
-    \textsuperscript{\rm 2}Affiliation 2\\
-    firstAuthor@affiliation1.com, secondAuthor@affilation2.com, thirdAuthor@affiliation1.com
+    \textsuperscript{\rm 1, \rm 2, \rm 3}Universidad Carlos III de Madrid\\
+    
+    \textsuperscript{\rm 1}100538592@alumnos.uc3m.es, 
+    \textsuperscript{\rm 2}100538592@alumnos.uc3m.es, 
+    \textsuperscript{\rm 3}100538592@alumnos.uc3m.es 
 }
-\fi
 
 
 % REMOVE THIS: bibentry
@@ -158,22 +115,42 @@
 \maketitle
 
 \begin{abstract}
-En este documento se detalla el estudio teórico y la evaluación práctica del dominio de Aprendizaje por Refuerzo Jerárquico. El problema estudiado es el Maze With Tasks, que consiste en resolver un laberinto en el que se deben realizar acciones intermedias. Se empleará como técnica el Aprendiaje por Refuerzo Feudal, que se basa en un sistema jerárquico en el que un sistema toma decisiones a alto nivel y otra serie de subsistemas realizan acciones a más bajo nivel.
+La realización de objetivos secuenciales en un entorno es una tarea compleja de modelar y aprender. Para poder representar estos
+escenarios, una de las técnicas más usadas es el Aprendizaje por Refuerzo Jerárquico (\textit{Hierarchical Reinforcement Learning (HIL)}).
+En este contexto, este trabajo se enfoca en Feudal Learning, una variante de IRL que organiza las tareas en una estructura jerárquica de
+niveles de abstracción. Este documento detallará las bases teóricas y su aplicación sobre un ambiente de desarrollo con tareas de navegación y
+obtención de subobjetivos.
 \end{abstract}
 
-
 \section{Introducción}
-En el campo de la IA, y su rápida evolución, el aprendizaje por refuerzo ha surgido como una herramienta poderosa para los problemas que implican toma de decisiones. Desde que se crearon, quedo demostrado su éxito notable en tareas de dicho tipo desde juegos hasta robótica. Sin embargo, a medida que las tareas se vuelven más complejas el uso de un solo algoritmo se ve influenciado debido a las limitaciones de los enfoques de AR planos. Es entonces cuando se ve la necesidad de ofrecer sistemas que dividan el problema en subtareas más manejables, los modelos de Aprendizaje de Refuerzo Jerárquico (ARJ).
 
-El aprendizaje por refuerzo jerárquico introdujo la estructura jerárquica al proceso de aprendizaje. Debido a ello, en vez de aprender una política para asignar el estado directamente a acciones, el ARJ permite aprender diferentes niveles de políticas, otorgando diferentes niveles de abstracción al sistema. Debido a ello, permite dividir la tarea inicial en tantas tareas como sean necesarias para enfrentar la complejidad del problema a resolver. Estas características no solo otorgan mayor nivel de simplicidad a cada política si no que ofrecen también una mejor escalabilidad y eficiencia a los algoritmos creados.
+En muchos dominios, como la robótica o sistemas autónomos, las tareas implican la realización de objetivos secuenciales en entornos complejos.
+La capacidad de modelar y aprender estos escenarios es un desafío crucial para la inteligencia artificial.
 
-Uno de los problemas típicos de dichas arquitecturas es el “Maze with Tasks” que consisten en problemas de laberintos de tareas. En dicha tarea tenemos como objetivo enseñar a un agente a navegar y completar múltiples objetivos dentro de un laberinto. Debida a la multitud de tareas que tiene que realizar el agente para poder lograr la navegación correcta por el laberinto, el problema se divide en diferentes subtareas jerárquicas (unas dependen de otras) que mediante la combinación permiten obtener el resultado esperado.
+El aprendizaje por refuerzo jerárquico (HIL) se presenta como un enfoque para la resolución de estos problemas. Mientras que otras técnicas previas
+enfrentan dificultades para escalar con el número de tareas y su complejidad, el Aprendizaje por Refuerzo Jerárquico (HIL) organiza el proceso en 
+niveles de abstracción. Dentro de este marco, el Aprendizaje Feudal se presenta como un enfoque que permite modelar las tareas mediante un jerarquía
+de abstracción.
 
-Dentro de la jerarquía, las tareas a realizar se dividen en diferentes niveles de abstracción, donde la ejecución de una tarea influencia de forma directa la ejecución de las tareas hijas. Un agente de alto nivel (el meta-controlador) decide que subtareas u opción debe ejecutarse a continuación (tareas a realizar a largo plazo). Dicha elección pasa al nivel inferior donde los controladores deciden las acciones especificas necesarias para completar esa subtarea (tareas cuya ejecución es momentánea). En dichas tareas es tan importante la definición de la jerarquía como el equilibrio entre la explotación de nuevas estrategias y la explotación del conocimiento adquirido para que la recompensa a largo plazo sea máxima.
+Este trabajo se centra en el estudio de Feudal Learning, una variante de HIL. Se presentan las bases teóricas de esta técnica como diferentes algoritmos
+o métodos de aprendizaje que se han desarrollado en este campo. También, se mostrará su aplicación sobre un entorno simulado diseñado para tareas 
+de navegación en laberintos y obtención de subobjetivos. 
 
-De entre las arquitecturas de los ARJ, debido a la estructura jerárquica que comparte con los sistemas que regían en la Edad Media, son particularmente útiles los algoritmos de Aprendizaje por Refuerzo Feudal (ARF) para solventar dichos problemas. En el problema un gerente de alto nivel asigna la tarea a realizar a continuación mientras que los otros subgerentes reciben la tarea de realizar las acciones necesarias para lograr el fin propuesto.
-\cite {geeksforgeeks2024hrl,sutton1999between,barto2003recent,dietterich2000hierarchical}
-\section{Estudio teórico}
+\section{Marco Teórico y Estado del Arte}
+% Que es el aprendizaje jerárquico
+
+% Qué el aprendizaje feudal
+
+% Cómo se diferencia del aprendizaje normal
+
+De manera general, el aprendizaje jerárquico 
+
+\subsection{Sistemas de Control Feudal}
+% Que son
+
+% En que se fundamente
+% - reward hiding
+% - information hiding
 
 \subsection{FeUdal Networks: FuN}
 
@@ -190,26 +167,28 @@ La arquitectura del sistema se muestra en la imagen siguiente \cite{feudal_netwo
     \label{fig:arquitectura_feudal}
 \end{figure}
 
+La entrada de esta red es procesada por una capa de percepción, que emplea capas convolucionales
+para extraer características de la imagen de entrada. A continuación, estas características son procesadas
+tanto por el worker como por el manager, cada uno de manera distinta; el manager extrae objetivos y el worker
+aprende a alcanzar esos objetivos.
 
-\begin{equation}
-z_t = f_{\text{percept}}(x_t);\quad s_t = f_{\text{Mspace}}(z_t)
-\label{eq:1}
-\end{equation}
+El objetivo principal del manager es generar metas que el worker debe cumplir. Recibe la percepción
+del entorno, proporcionada por el módulo de percepción, ese estado es procesado por una red recurrente LSTM
+para mantener un estado interno y poder capturar información relevante en horizontes temporales largos.
+El manager emplea esta información para predecir un objetivo direccional en el espacio latente, este objetivo
+es un vector unitario, lo que asegura que el worker se enfoque en la dirección y no en la posición absoluta.
 
-\begin{equation}
-h_t^M, \hat{g}_t = f_{\text{Mrnn}}(s_t, h_{t-1}^M);\quad g_t = \hat{g}_t / \|\hat{g}_t\|
-\label{eq:2}
-\end{equation}
+Para entrenar el manager, se emplea la recompensa obtenida, y emplea la similitud coseno entre la dirección en la que 
+se movió el worker y la compara con el objetivo establecido, empleando la similitud coseno como función de pérdida.
+Esta pérdida incentiva al Manager a emitir objetivos que maximicen el progreso hacia estados ventajosos.
 
-\begin{equation}
-w_t = \phi\left(\sum_{i=t-c}^t g_i\right)
-\label{eq:3}
-\end{equation}
+El vector de objetivos se envía al worker sin propagar gradientes, esto garantiza que los objetivos 
+mantengan un significado semántico independiente, en lugar de ser simples variables latentes optimizadas de manera conjunta.
 
-\begin{equation}
-h_t^W, U_t = f_{\text{Wrnn}}(z_t, h_{t-1}^W);\quad \pi_t = \text{SoftMax}(U_t w_t)
-\label{eq:4}
-\end{equation}
+En el caso del worker, también se emplea una red LSTM para mantener un estado interno y poder capturar información relevante,
+pero en este caso, el worker recibe tanto la percepción del entorno como el objetivo del manager. El worker emplea esta información
+para predecir la acción que debe realizar para alcanzar el objetivo. La acción se predice en el espacio de acciones, y se emplea
+
 
 \subsection{Definición}
 
