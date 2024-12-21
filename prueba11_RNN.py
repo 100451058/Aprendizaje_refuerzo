@@ -218,6 +218,7 @@ for global_steps in range(10000):
     rewards = []
     policies = []
     values = []
+    iterations = 0
 
     while not done:
         # Obtener la política y el valor
@@ -249,6 +250,9 @@ for global_steps in range(10000):
         )
 
         score += reward
+        iterations += 1
+        if iterations > 2000:
+            done = True
         env.render()
 
     # Calcular retornos acumulados

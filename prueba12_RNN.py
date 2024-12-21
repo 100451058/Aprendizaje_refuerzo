@@ -1,4 +1,3 @@
-from cv2 import log
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -7,7 +6,6 @@ import numpy as np
 import random
 from collections import namedtuple
 from src.maze import MazeEnv
-from tensorboardX import SummaryWriter
 import keyboard
 import time
 import torch
@@ -153,6 +151,7 @@ class FuN(nn.Module):
 
         goal, m_lstm, m_value, m_state = self.manager((percept_z, m_lstm))
         goals_horizon = torch.cat([goals_horizon[:, 1:], goal.unsqueeze(1)], dim=1)
+        print("goals_horizon: ", goals_horizon.shape)
 
         policy, (w_hx, w_cx), w_value_ext, w_value_int = self.worker(
             (percept_z, w_lstm, goals_horizon)
