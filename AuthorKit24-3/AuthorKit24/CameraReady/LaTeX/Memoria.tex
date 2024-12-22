@@ -116,8 +116,8 @@
 
 \begin{abstract}
 La realización de objetivos secuenciales en un entorno es una tarea compleja de modelar y aprender. Para poder representar estos
-escenarios, una de las técnicas más usadas es el Aprendizaje por Refuerzo Jerárquico (\textit{Hierarchical Reinforcement Learning (HIL)}).
-En este contexto, este trabajo se enfoca en Feudal Learning, una variante de IRL que organiza las tareas en una estructura jerárquica de
+escenarios, una de las técnicas más usadas es el Aprendizaje por Refuerzo Jerárquico (\textit{Hierarchical Reinforcement Learning (HRL)}).
+En este contexto, este trabajo se enfoca en Feudal Learning, una variante de HRL que organiza las tareas en una estructura jerárquica de
 niveles de abstracción. Este documento detallará las bases teóricas y su aplicación sobre un ambiente de desarrollo con tareas de navegación y
 obtención de subobjetivos.
 \end{abstract}
@@ -127,36 +127,68 @@ obtención de subobjetivos.
 En muchos dominios, como la robótica o sistemas autónomos, las tareas implican la realización de objetivos secuenciales en entornos complejos.
 La capacidad de modelar y aprender estos escenarios es un desafío crucial para la inteligencia artificial.
 
-El aprendizaje por refuerzo jerárquico (HIL) se presenta como un enfoque para la resolución de estos problemas. Mientras que otras técnicas previas
-enfrentan dificultades para escalar con el número de tareas y su complejidad, el Aprendizaje por Refuerzo Jerárquico (HIL) organiza el proceso en 
+
+El aprendizaje por refuerzo jerárquico (HRL) se presenta como un enfoque para la resolución de estos problemas. Mientras que otras técnicas previas
+enfrentan dificultades para escalar con el número de tareas y su complejidad, el Aprendizaje por Refuerzo Jerárquico (HRL) organiza el proceso en 
 niveles de abstracción. Dentro de este marco, el Aprendizaje Feudal se presenta como un enfoque que permite modelar las tareas mediante un jerarquía
 de abstracción.
 
-Este trabajo se centra en el estudio de Feudal Learning, una variante de HIL. Se presentan las bases teóricas de esta técnica como diferentes algoritmos
+
+Este trabajo se centra en el estudio de Feudal Learning, una variante de HRL. Se presentan las bases teóricas de esta técnica como diferentes algoritmos
 o métodos de aprendizaje que se han desarrollado en este campo. También, se mostrará su aplicación sobre un entorno simulado diseñado para tareas 
 de navegación en laberintos y obtención de subobjetivos. 
 
 \section{Marco Teórico y Estado del Arte}
 % Que es el aprendizaje jerárquico
+El aprendizaje por refuerzo jerárquico (HRL por sus siglas en inglés) se ha consolidado como una estrategia para abordar problemas complejos
+que involucran secuencias de tareas. Este enfoque se originó como una extensión de los modelos de decisión de Markov para tareas de largo horizonte
+de decisión mediante el uso de modelos semi-MDP\cite{sutton1999between}. Con ellos, se establecen las bases teóricas para la abstración temporal.
+
+Posteriormente, con los años, han surgido una serie de algoritmos que implementa y abordan las limitaciones de HRL. 
+Dietterich \cite{dietterich2000hierarchical} propuso el modelo MaxQ, descompone las tareas en jerarquías de subtareas
+para la optimización y planificación de diferentes funciones de valor. Por otro lado, en \cite{barto2003recent} se exploran 
+los avances en estructuras jerárquicas para diferentes dominios y la relevancia de HRL para la resolución de problemas de 
+gran complejidad.  
 
 % Qué el aprendizaje feudal
-
-% Cómo se diferencia del aprendizaje normal
-
-De manera general, el aprendizaje jerárquico 
+Dentro de este marco teórico, el Aprendizaje Feudal se presenta como un técnica que organiza las tareas en niveles jerárquicos, donde cada nivel 
+es operado con distintos grados de abstracción tanto en el estado como en temporalidad. Este enfoque \cite{dayan1992feudal} divide la jerarquía en managers, que operan con abstracciones 
+del estado y dan ordenes de acción y en workers que realizan las acciones. Esta colaboración jerárquica permite aprender y ejecutar tareas de manera más eficiente, aprovechando
+la modularidad y la capacidad de escalar a problemas complejos.
 
 \subsection{Sistemas de Control Feudal}
 % Que son
+En 1992, P. Dayan y G. Hinton \cite{dayan1992feudal} definen los sistemas de control feudal como un reflejo de las sociedades feudales. En ellos, se 
+define una jerarquía de \textit{managers}, \textit{supermanagers} y \textit{workers}. Cada uno opera con un grado de abstracción de estados y temporal
+distinto. Los managers tienen poder absoluto sobre sus subordinados. Pueden dar ordenes que deben ser seguidas, dan tareas, recompensas y castigos si 
+las ordenes no son seguidas. Esta estructura de jerarquíca de mando permite aprender y comprender tareas complejas con el fin de maximizar el refuezo.
 
-% En que se fundamente
-% - reward hiding
-% - information hiding
+Este sistema de control se basa en dos principios:
+\begin{itemize}
+    \item \textbf{Ocultamiento de la Recompensa (Reward Hiding)}. Los \textit{managers} recompensan a los \textit{submanagers} únicamente si operan 
+    en consonancia con las ordenes dadas. Los \textit{submanagers} deben aprender a obedecer y aprender que debe hacer el siguiente agente para 
+    cumplir de manera eficiente. De la misma manera, el \textit{submanager} es recompensado si su subordinado ejecuta las ordenes a pesar de no llegar a cumplir 
+    las ordenes propias del \textit{submanager}.
+
+    \item \textbf{Ocultamiento de la Información (Information Hiding)}. Los \textit{managers} solamente deben conocer la información necesaria 
+    con un nivel de granularidad distinto a la de los \textit{workers}. Las decisiones se toman en base a un espacio de estados menor pero más
+    denso en información. También, las órdenes dadas a un \textit{submanager} no son propagadas hacia el resto de niveles para no afectar la toma
+    de decisiones. Tampoco, se propagan hacia arriba las acciones del \textit{worker} hacia el resto de \textit{managers}. 
+\end{itemize}
+
+Estos principios siguen una dinámica de poder y gestión similar a la de sociedades feudales con diferente interés en cada estramento de la organización.
+No obstante, todos se alinean para la obtención y maximización de una recompensa (o refuerzo) dado por el problema.
+
+Para el aprendizaje e implementación, se propusó el uso de una versión modificada del Aprendizaje Q-Learning. Cada \textit{manager}, \textit{submanager} y
+\textit{worker} tiene asociada una función acción-valor (\textit{Q Tabla}). La principal diferencia con respecto el algoritmo original es la 
+modificación de la función de recompensa. En este caso, se modifica en función de las acciones tomadas por cada nivel de la jerarquía en consonancia 
+con su nivel de obediencia. 
 
 \subsection{FeUdal Networks: FuN}
 
 Las redes feudales se basan en la arquitectura de aprendiaje por refuerzo feudal, 
 una arquitectura del aprendizaje por refuerzo jerárquico. Esta arquitectura emplea un sistema de control, conocido
-como "manager", que asigna tareas a un subsistema conocido como "worker" que debe aprender a ejecutarlas de manera óptima.
+como \textit{manager}, que asigna tareas a un subsistema conocido como \textit{worker} que debe aprender a ejecutarlas de manera óptima.
 
 La arquitectura del sistema se muestra en la imagen siguiente \cite{feudal_networks_2024}.
 
@@ -196,7 +228,6 @@ para predecir la acción que debe realizar para alcanzar el objetivo. La acción
 
 \section{Evaluación práctica}
 
-Q _Learning  v2_
 
 Debido a la disipación de las paredes que se experimentaba al realizar las abstracciones del mapa de estados a medida que se disminuía el nivel del gerente, el aprendizaje resultaba altamente perjudicado llegando trasmitirse ordenes imposibles de realizar debida a la naturaleza cerrada del mapa del problema.
 
