@@ -3,13 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 import numpy as np
-import random
 from collections import namedtuple
 from src.maze import MazeEnv
-from tensorboardX import SummaryWriter
-import keyboard  # Biblioteca para capturar las teclas
-import time
-import copy
 import matplotlib.animation as animation
 from IPython.display import HTML, display
 

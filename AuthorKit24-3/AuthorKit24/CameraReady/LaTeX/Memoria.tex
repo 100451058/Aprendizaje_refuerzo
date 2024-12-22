@@ -219,7 +219,10 @@ mantengan un significado semántico independiente, en lugar de ser simples varia
 
 En el caso del worker, también se emplea una red LSTM para mantener un estado interno y poder capturar información relevante,
 pero en este caso, el worker recibe tanto la percepción del entorno como el objetivo del manager. El worker emplea esta información
-para predecir la acción que debe realizar para alcanzar el objetivo. La acción se predice en el espacio de acciones, y se emplea
+para predecir la acción que debe realizar para alcanzar el objetivo. La acción se predice en el espacio de acciones, y se ejecuta,
+lo que proporciona un nuevo estado y un refuerzo que se emplea para entrenar las redes.
+
+
 
 
 \subsection{Definición}
@@ -243,6 +246,47 @@ En cuanto al proceso de aprendizaje, se incluyeron diferentes implementaciones p
 En cuento a los resultados se observó como sin ayudas externas el proceso de aprendizaje era más lento al tener que explorar muchos estados y no contar con una ayuda externa en caso de caer en bucles debido a los estrechos caminos que componían el mapa. Cuando se le introducía la ayuda externa, teacher, dicho proceso de aprendizaje se veía acortado siendo capaz de definir la ruta optima con mayor rapidez. Sin embargo, la influencia de un teacher con conocimiento de un solo camino ante el que siempre tenía la solución optima suponía una gran diferencia también en los momentos en los que se partía de zonas inexploradas. Esto se debía a que el agente tenía que lograr llegar hasta le punto más cercano de conocimiento del teacher para poder obtener su ayuda, lo que lo ponía en similar situación que cuando no contaba con ayuda externa.
 
 En conclusión, esta nueva estructura feudal, de un noble (mánager) y un subordinado (worker), supuso una mejora en comparación con el nivel anterior debida a la simplicidad y mayor énfasis en las limitaciones del mapa de estados que permitía definir. Mediante los experimentos que se realizaron se observó no solo una mejora en el proceso de aprendizaje si no que una capacidad de llegar a soluciones en mapas de 20x20 tras 9000 iteraciones en caso de no incluir la ayuda del teacher o 1000 iteraciones cuando se le facilitaba un teacher para poder preguntar (limitando el número de consultas a realizar en 3xP; siendo P los pasos del camino más corto para solucionar el problema). 
+
+
+\subsection{Pruebas FuN}
+Otra técnica empleada de aprendizaje por refuerzo feudal son las FeUdal Networks (FuN), basadas en LSTMs. Se creó una adaptación de este tipo de red para que pudiera funcionar en el dominio tratado, y se establecieron y probaron distintos refuerzos que proporcionar a la red, evaluando su efectividad a la hora de encontrar soluciones.
+
+La primera versión del modelo FuN, emplea una función de refuerzo muy similar a la usada durante el Q-learning, en donde se da un refuerzo positivo por alcanzar los objetivos y se dan refuerzos negativos a medida que transcurre el tiempo sin alcanzar un objetivo. 
+Esta primera versión no produjo resultados demasiado positivos, el modelo a veces lograba completar el laberinto pero era común que se quedara atascado y que la pérdida no disminuyera. 
+Todos los modelos probados en esta sección se han entrenado durante 500 épocas, con un límite de 2000 acciones por época (si en esas iteraciones no logra resolver el laberinto, 
+se reinicia) y para comprobar si el modelo aprende correctamente se analizó si la pérdida disminuía a lo largo del tiempo. Se puede observar que no es el caso en la siguiente gráfica, donde el modelo aprende al principio y luego alcanza un punto estable.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\columnwidth]{FuN_1.png}
+    \caption{Pérdida de la primera versión.}
+    \label{fig:FuN1}
+\end{figure}
+
+En la segunda versión, y para intentar mejorar la precisión del modelo, se añadió otra regla que penalizaba al modelo cuanto más lejos estuviera del objetivo definido por el manager, para lo que se empleó la distancia de Manhattan. Esta nueva versión 
+produjo resultados más inestables, donde no se llega a apreciar una auténtica mejora del modelo a lo largo del tiempo; los resultados se comparan con los de la versión anterior en la siguiente gráfica. Hay que tener en cuenta que la pérdida no está
+en la misma escala entre las dos versiones, y lo importante que se debe observar es una disminución de la misma a lo largo del tiempo, lo que indica que el modelo está aprendiendo, independientemente de la escala real de la pérdida. En la primera versión se 
+penalizaba menos al modelo y por eso parece que tiene una pérdida menor, pero no quiere decir que sea mejor.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\columnwidth]{FuN_2.png}
+    \caption{Pérdida de las dos primeras versiones.}
+    \label{fig:FuN2}
+\end{figure}
+
+Se comprueba que no mejora demasiado a lo largo del tiempo, y los valores son más inestables, lo que no es necesariamente algo negativo, pero tampoco parece estar ayudando mucho al modelo.
+
+Como tercera versión de este método, se añadió una recompensa por explorar estados nuevos y un castigo por repetir estados, lo que resultó en un nuevo modelo que, si bien sí que parece que aprenda, sigue sin producir soluciones mejores que los otros métodos. Es posible que si se entrenara durante el 
+tiempo suficiente, y modificando los parámetros de las recompensas hasta alcanzar los mejores valores se obtuvieran resultados similares e incluso mejores que los proporcionados por los otros métodos, pero requeriría una gran carga computacional.
+
+Los resultados de esta versión, comparados con las otras dos, son los siguientes.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\columnwidth]{FuN_3.png}
+    \caption{Pérdida de todas versiones.}
+    \label{fig:FuN3}
+\end{figure}
 
 
 \section{Conclusiones}
