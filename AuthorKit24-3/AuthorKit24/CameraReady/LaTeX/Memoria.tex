@@ -26,10 +26,10 @@
 \usepackage{listings}
 \DeclareCaptionStyle{ruled}{labelfont=normalfont,labelsep=colon,strut=off} % DO NOT CHANGE THIS
 \lstset{%
-	basicstyle={\footnotesize\ttfamily},% footnotesize acceptable for monospace
-	numbers=left,numberstyle=\footnotesize,xleftmargin=2em,% show line numbers, remove this entire line if you don't want the numbers.
-	aboveskip=0pt,belowskip=0pt,%
-	showstringspaces=false,tabsize=2,breaklines=true}
+    basicstyle={\footnotesize\ttfamily},% footnotesize acceptable for monospace
+    numbers=left,numberstyle=\footnotesize,xleftmargin=2em,% show line numbers, remove this entire line if you don't want the numbers.
+    aboveskip=0pt,belowskip=0pt,%
+    showstringspaces=false,tabsize=2,breaklines=true}
 \floatstyle{ruled}
 \newfloat{listing}{tb}{lst}{}
 \floatname{listing}{Listing}
@@ -107,7 +107,6 @@
     \textsuperscript{\rm 3}100451058@alumnos.uc3m.es 
 }
 
-
 % REMOVE THIS: bibentry
 % This is only needed to show inline citations in the guidelines document. You should not need it and can safely delete it.
 \usepackage{bibentry}
@@ -130,12 +129,10 @@ obtención de subobjetivos.
 En muchos dominios, como la robótica o sistemas autónomos, las tareas implican la realización de objetivos secuenciales en entornos complejos.
 La capacidad de modelar y aprender estos escenarios es un desafío crucial para la inteligencia artificial.
 
-
 El aprendizaje por refuerzo jerárquico (HRL) se presenta como un enfoque para la resolución de estos problemas. Mientras que otras técnicas previas
 enfrentan dificultades para escalar con el número de tareas y su complejidad, el Aprendizaje por Refuerzo Jerárquico (HRL) organiza el proceso en 
 niveles de abstracción. Dentro de este marco, el Aprendizaje Feudal se presenta como un enfoque que permite modelar las tareas mediante una jerarquía
 de abstracción.
-
 
 Este trabajo se centra en el estudio de Feudal Learning, una variante de HRL. Se presentan las bases teóricas de esta técnica como diferentes algoritmos
 o métodos de aprendizaje que se han desarrollado en este campo. También, se mostrará su aplicación sobre un entorno simulado diseñado para tareas 
@@ -163,7 +160,7 @@ la modularidad y la capacidad de escalar a problemas complejos.
 % Que son
 En 1992, P. Dayan y G. Hinton \cite{dayan1992feudal} definen los sistemas de control feudal como un reflejo de las sociedades feudales. En ellos, se 
 define una jerarquía de \textit{managers}, \textit{supermanagers} y \textit{workers}. Cada uno opera con un grado de abstracción de estados y temporal
-distinto. Los managers tienen poder absoluto sobre sus subordinados. Pueden dar ordenes que deben ser seguidas, dan tareas, recompensas y castigos si 
+distinto. Los managers tienen poder absoluto sobre sus subordinados. Pueden dar órdenes que deben ser seguidas, dan tareas, recompensas y castigos si 
 las órdenes no son seguidas. Esta estructura de jerárquica de mando permite aprender y comprender tareas complejas con el fin de maximizar el refuerzo.
 
 Este sistema de control se basa en dos principios:
@@ -191,7 +188,7 @@ con su nivel de obediencia.
 
 Las redes feudales se basan en la arquitectura de aprendiaje por refuerzo feudal, 
 una arquitectura del aprendizaje por refuerzo jerárquico. Esta arquitectura emplea un sistema de control, conocido
-como \textit{manager}, que asigna tareas a un subsistema conocido como \textit{worker} que debe aprender a ejecutarlas de manera óptima.
+como \textit{mánager}, que asigna tareas a un subsistema conocido como \textit{worker} que debe aprender a ejecutarlas de manera óptima.
 
 La arquitectura del sistema se muestra en la imagen siguiente\cite{feudal_networks_2024}.
 
@@ -203,13 +200,13 @@ La arquitectura del sistema se muestra en la imagen siguiente\cite{feudal_networ
 
 La entrada de esta red es procesada por una capa de percepción, que emplea capas convolucionales
 para extraer características de la imagen de entrada. A continuación, estas características son procesadas
-tanto por el worker como por el manager, cada uno de manera distinta; el mánager extrae objetivos y el worker
+tanto por el worker como por el mánager, cada uno de manera distinta; el mánager extrae objetivos y el worker
 aprende a alcanzar esos objetivos.
 
 El objetivo principal del mánager es generar metas que el worker debe cumplir. Recibe la percepción
 del entorno, proporcionada por el módulo de percepción, ese estado es procesado por una red recurrente LSTM
 para mantener un estado interno y poder capturar información relevante en horizontes temporales largos.
-El manager emplea esta información para predecir un objetivo direccional en el espacio latente, este objetivo
+El mánager emplea esta información para predecir un objetivo direccional en el espacio latente, este objetivo
 es un vector unitario, lo que asegura que el worker se enfoque en la dirección y no en la posición absoluta.
 
 Para entrenar el mánager, se emplea la recompensa obtenida, y emplea la similitud coseno entre la dirección en la que 
@@ -244,7 +241,7 @@ Esto genera un laberinto con el doble del tamaño original como se ve en Fig. \r
 Para los experimentos, se iniciaba con 0 monedas y en base a la capacidad de aprender el camino y obtener los resultados, se añadían monedas o dejaba el experimento.
 De esta manera, se podía estudiar de manera directamente el efecto del incremento en la complejidad en la capacidad de adaptarse y aprender el laberinto. 
 
-Se debe destacar que en cada experimento, el laberinto generado es distinto. No se ha podido mantener el mismo laberinto en todas ocasiones. No obstante,
+Se debe destacar que, en cada experimento, el laberinto generado es distinto. No se ha podido mantener el mismo laberinto en todas ocasiones. No obstante,
 se pueden comparar los resultados debido a que todos comparten las mismas características y son válidos.
 
 Para la experimentación, los agentes tienen como estado base (previo a transformaciones propias del método) la vista global del laberinto y la posición como coordenadas. 
@@ -257,8 +254,8 @@ Finalmente, aunque inicialmente se partió de episodios partiendo del punto más
 Para comprobar la efectividad de estos métodos, se ha realizado diferentes pruebas e implementaciones. El primer experimento
 se basa en una implementación que refleja fielmente los alineamientos de los sistemas de control feudales descritos. 
 
-Basándose en el ejemplo de la publicación, se han planteado una jerarquía de cuatro niveles en la que cada manager tiene la mitad de resolución 
-que el nivel anterior (Veasé Fig.\ref{fig:feudal-abstract}). Además, los manager tienen acceso al estado con la presencia de monedas en cada región.  
+Basándose en el ejemplo de la publicación, se han planteado una jerarquía de cuatro niveles en la que cada mánager tiene la mitad de resolución 
+que el nivel anterior (Veasé Fig.\ref{fig:feudal-abstract}). Además, los mánager tienen acceso al estado con la presencia de monedas en cada región.  
 
 \begin{figure}[H]
     \centering
@@ -279,7 +276,7 @@ se encuentra en los \textit{managers} y sus órdenes.
 
 Tras un análisis de los resultados, se ha detectado un problema de representación que no se tenía en el experimento original. El laberinto contiene 
 una gran cantidad de caminos sin salida y cerrados. En estos casos, los \textit{mánagers} no tienen percepción de las paredes y su representación puede incluir
-intersecciones entre varias zonas paralelas. Este problema deriva en ordenes inválidas por parte de los \textit{manager} que desorientan al \textit{worker}. 
+intersecciones entre varias zonas paralelas. Este problema deriva en ordenes inválidas por parte de los \textit{mánager} que desorientan al \textit{worker}. 
 
 \subsection{Experimento: Feudal Q-Learning Modificado}
 
@@ -298,13 +295,12 @@ manager podían ser “ignoradas” debida a su aleatoriedad.
 
 El trabajador a su vez realizaba un proceso de exploración que se veía recompensado cuando alcanzaba el punto objetivo determinado por el mánager.
 Mediante estas exploraciones, iba creando sus caminos o matrices Q que iba actualizando y afinando con el fin de encontrar el camino óptimo a
-partir de las recompensas obtenidas por obedecer al manager.
+partir de las recompensas obtenidas por obedecer al mánager.
 
 En cuanto al proceso de aprendizaje, se incluyeron diferentes implementaciones para ver la influencia que estas variaciones o perturbaciones
 tenían en el proceso de aprendizaje del super-agente. Las perturbaciones más comunes consistían en limitar el conocimiento que tenía el 
 teacher (dándole solo el conocimiento de la solución empezando desde las coordenadas (1,1) o el conocimiento completo) o variando la posición
 de comienzo del agente.
-
 
 En cuento a los resultados que se obtuvieron sin ayudas externas, el proceso de aprendizaje era más lento al tener que explorar muchos estados y
  no contar con una ayuda externa en caso de caer en bucles debido a los estrechos caminos que componían el mapa (\ref{fig:maze-example}). Debido
@@ -318,7 +314,7 @@ En cuento a los resultados que se obtuvieron sin ayudas externas, el proceso de 
 \end{figure}
 
 Sin embargo, la influencia de un teacher con conocimiento de un solo camino ante el que siempre tenía la solución óptima suponía una gran diferencia.
- Mediante esta ayuda, el worker era capaz de afinar mejor la ruta a seguir y por lo tanto se vió un incremento en la cantidad de refuerzo medio que 
+ Mediante esta ayuda, el worker era capaz de afinar mejor la ruta a seguir y por lo tanto se vio un incremento en la cantidad de refuerzo medio que 
  se obtenían, pasando este a ser un valor positivo.
 
 Aun así, al no contener información explotable desde todas las zonas del mapa de estados se observaban procesos de oscilaciones también en los momentos
@@ -368,9 +364,9 @@ se reinicia) y para comprobar si el modelo aprende correctamente se analizó si 
     \caption{Pérdida de la primera versión.\label{fig:FuN6}}
 \end{figure}
 
-En la segunda versión, y para intentar mejorar la precisión del modelo, se añadió otra regla que penalizaba al modelo cuanto más lejos estuviera del objetivo definido por el manager, para lo que se empleó la distancia de Manhattan. Esta nueva versión 
+En la segunda versión, y para intentar mejorar la precisión del modelo, se añadió otra regla que penalizaba al modelo cuanto más lejos estuviera del objetivo definido por el mánager, para lo que se empleó la distancia de Manhattan. Esta nueva versión 
 produjo resultados más inestables, donde no se llega a apreciar una auténtica mejora del modelo a lo largo del tiempo; los resultados se comparan con los de la versión anterior en la siguiente gráfica. Hay que tener en cuenta que la pérdida no está
-en la misma escala entre las dos versiones, y lo importante que se debe observar es una disminución de la misma a lo largo del tiempo, lo que indica que el modelo está aprendiendo, independientemente de la escala real de la pérdida. En la primera versión se 
+en la misma escala entre las dos versiones, y lo importante que se debe observar es una disminución de esta a lo largo del tiempo, lo que indica que el modelo está aprendiendo, independientemente de la escala real de la pérdida. En la primera versión se 
 penalizaba menos al modelo y por eso parece que tiene una pérdida menor, pero no quiere decir que sea mejor.
 
 \begin{figure}[H]
@@ -391,18 +387,16 @@ Los resultados de esta versión, comparados con las otras dos, son los siguiente
     \caption{Pérdida de todas versiones.\label{fig:FuN5}}
 \end{figure}
 
-
 \section{Conclusiones}
 En base al trabajo realizado, se puede concluir que las técnicas de aprendizaje como el descrito en este documento, el Aprendizaje por Refuerzo Feudal, añaden cierto valor añadido en aquellos problemas que cuentan con un fin complejo que se puede presentar como una suma de tareas a tratar de forma paralela y ordenada; en otras palabras, de forma jerárquica. Este sistema permite determinar agentes para cada nivel de abstracción estrictamente necesaria para la tarea, abstrayendo la decisión de problemas e inconvenientes pertenecientes a otras subtareas del problema.
 
-
-Por el otro lado, se ha podido observar la influencia de la sobredivisión de las tareas. Al dividir una tarea en demasiados niveles de abstracción, se realizaba una sobreabstracción del espacio, lo que llevaba a tomar decisiones sin la información necesaria para dicha labor. En el caso del estudio realizado, dicho problema se ve bien representado en el caso de la selección de los destinos a navegar, donde debido a la excesiva abstracción del mapa de estados, se perdía la información espacial de las paredes. 
-
+Por el otro lado, se ha podido observar la influencia de la sobre-división de las tareas. Al dividir una tarea en demasiados niveles de abstracción, se realizaba una sobre-abstracción del espacio, lo que llevaba a tomar decisiones sin la información necesaria para dicha labor. En el caso del estudio realizado, dicho problema se ve bien representado en el caso de la selección de los destinos a navegar, donde debido a la excesiva abstracción del mapa de estados, se perdía la información espacial de las paredes. 
 
 Debido a ello, se estima que, aunque dicha decisión se tome como abstraible en otras investigaciones, la naturaleza cerrada en cuestiones de navegación del problema tratado anulaba dicha característica.
-
 
 
 \bibliography{aaai24}
 
 \end{document}
+
+
