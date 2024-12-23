@@ -134,7 +134,7 @@ enfrentan dificultades para escalar con el número de tareas y su complejidad, e
 niveles de abstracción. Dentro de este marco, el Aprendizaje Feudal se presenta como un enfoque que permite modelar las tareas mediante una jerarquía
 de abstracción.
 
-Este trabajo se centra en el estudio de Feudal Learning, una variante de HRL. Se presentan las bases teóricas de esta técnica como diferentes algoritmos
+Este trabajo se centra en el estudio de \textit{Feudal Learning}, una variante de HRL. Se presentan las bases teóricas de esta técnica como diferentes algoritmos
 o métodos de aprendizaje que se han desarrollado en este campo. También, se mostrará su aplicación sobre un entorno simulado diseñado para tareas 
 de navegación en laberintos y obtención de subobjetivos. 
 
@@ -152,20 +152,20 @@ gran complejidad.
 
 % Qué el aprendizaje feudal
 Dentro de este marco teórico, el Aprendizaje Feudal se presenta como una técnica que organiza las tareas en niveles jerárquicos, donde cada nivel 
-es operado con distintos grados de abstracción tanto en el estado como en temporalidad. Este enfoque \cite{dayan1992feudal} divide la jerarquía en managers, que operan con abstracciones 
-del estado y dan órdenes de acción y en workers que realizan las acciones. Esta colaboración jerárquica permite aprender y ejecutar tareas de manera más eficiente, aprovechando
+es operado con distintos grados de abstracción tanto en el estado como en temporalidad. Este enfoque \cite{dayan1992feudal} divide la jerarquía en \textit{managers}, que operan con abstracciones 
+del estado y dan órdenes de acción y en \textit{workers} que realizan las acciones. Esta colaboración jerárquica permite aprender y ejecutar tareas de manera más eficiente, aprovechando
 la modularidad y la capacidad de escalar a problemas complejos.
 
 % FuN
 Otro enfoque es el propuesto por A. S. Vezhnevets et al. \cite{vezhnevets2017feudal}, que plantea las redes feudales como una arquitectura de aprendizaje por refuerzo jerárquico.
-Este sistema emplea la estructura manager-worker mencionada anteriormente, pero añade redes neuronales recurrentes (específicamente LSTMs) como mecanismo de funcionamiento tanto del 
-manager como del worker. Este enfoque se ha mostrado efectivo en la resolución de problemas complejos; por lo que puede ser de utilidad en la resolución del problema propuesto en este trabajo.
+Este sistema emplea la estructura \textit{manager-worker} mencionada anteriormente, pero añade redes neuronales recurrentes (específicamente LSTMs) como mecanismo de funcionamiento tanto del 
+\textit{manager} como del \textit{worker}. Este enfoque se ha mostrado efectivo en la resolución de problemas complejos; por lo que puede ser de utilidad en la resolución del problema propuesto en este trabajo.
 
 \subsection{Sistemas de Control Feudal}
 % Que son
 En 1992, P. Dayan y G. Hinton \cite{dayan1992feudal} definen los sistemas de control feudal como un reflejo de las sociedades feudales. En ellos, se 
 define una jerarquía de \textit{managers}, \textit{supermanagers} y \textit{workers}. Cada uno opera con un grado de abstracción de estados y temporal
-distinto. Los managers tienen poder absoluto sobre sus subordinados. Pueden dar órdenes que deben ser seguidas, dan tareas, recompensas y castigos si 
+distinto. Los \textit{managers} tienen poder absoluto sobre sus subordinados. Pueden dar órdenes que deben ser seguidas, dan tareas, recompensas y castigos si 
 las órdenes no son seguidas. Esta estructura jerárquica de mando permite aprender y comprender tareas complejas con el fin de maximizar el refuerzo.
 
 Este sistema de control se basa en dos principios:
@@ -184,7 +184,7 @@ Este sistema de control se basa en dos principios:
 Estos principios siguen una dinámica de poder y gestión similar a la de sociedades feudales con diferente interés en cada estamento de la organización.
 No obstante, todos se alinean para la obtención y maximización de una recompensa (o refuerzo) dado por el problema.
 
-Para el aprendizaje e implementación, se propuso el uso de una versión modificada del Aprendizaje Q-Learning. Cada \textit{mánager}, \textit{submanager} y
+Para el aprendizaje e implementación, se propuso el uso de una versión modificada del Aprendizaje Q-Learning. Cada \textit{manager}, \textit{submanager} y
 \textit{worker} tiene asociada una función acción-valor (\textit{Q Tabla}). La principal diferencia con respecto al algoritmo original es la 
 modificación de la función de recompensa. En este caso, se modifica en función de las acciones tomadas por cada nivel de la jerarquía en consonancia 
 con su nivel de obediencia. 
@@ -193,7 +193,7 @@ con su nivel de obediencia.
 
 Las redes feudales se basan en la arquitectura de aprendizaje por refuerzo feudal \cite{vezhnevets2017feudal}, 
 una arquitectura del aprendizaje por refuerzo jerárquico. Esta arquitectura emplea un sistema de control, conocido
-como \textit{mánager}, que asigna tareas a un subsistema conocido como \textit{worker} que debe aprender a ejecutarlas de manera óptima.
+como \textit{manager}, que asigna tareas a un subsistema conocido como \textit{worker} que debe aprender a ejecutarlas de manera óptima.
 
 La arquitectura del sistema se muestra en la imagen siguiente\cite{feudal_networks_2024}.
 
@@ -205,24 +205,24 @@ La arquitectura del sistema se muestra en la imagen siguiente\cite{feudal_networ
 
 La entrada de esta red es procesada por una capa de percepción, que emplea capas convolucionales
 para extraer características de la imagen de entrada. A continuación, estas características son procesadas
-tanto por el worker como por el mánager, cada uno de manera distinta; el mánager extrae objetivos y el worker
+tanto por el \textit{worker} como por el \textit{manager}, cada uno de manera distinta; el \textit{manager} extrae objetivos y el \textit{worker}
 aprende a alcanzar esos objetivos.
 
-El objetivo principal del mánager es generar metas que el worker debe cumplir. Recibe la percepción
+El objetivo principal del \textit{manager} es generar metas que el \textit{worker} debe cumplir. Recibe la percepción
 del entorno, proporcionada por el módulo de percepción, ese estado es procesado por una red recurrente LSTM
 para mantener un estado interno y poder capturar información relevante en horizontes temporales largos.
-El mánager emplea esta información para predecir un objetivo direccional en el espacio latente, este objetivo
-es un vector unitario, lo que asegura que el worker se enfoque en la dirección y no en la posición absoluta.
+El \textit{manager} emplea esta información para predecir un objetivo direccional en el espacio latente, este objetivo
+es un vector unitario, lo que asegura que el \textit{worker} se enfoque en la dirección y no en la posición absoluta.
 
-Para entrenar el mánager, se emplea la recompensa obtenida, y emplea la similitud coseno entre la dirección en la que 
-se movió el worker y la compara con el objetivo establecido, empleando la similitud coseno como función de pérdida.
-Esta pérdida incentiva al manager a emitir objetivos que maximicen el progreso hacia estados ventajosos.
+Para entrenar el \textit{manager}, se emplea la recompensa obtenida, y emplea la similitud coseno entre la dirección en la que 
+se movió el \textit{worker} y la compara con el objetivo establecido, empleando la similitud coseno como función de pérdida.
+Esta pérdida incentiva al \textit{manager} a emitir objetivos que maximicen el progreso hacia estados ventajosos.
 
-El vector de objetivos se envía al worker sin propagar gradientes, esto garantiza que los objetivos 
+El vector de objetivos se envía al \textit{worker} sin propagar gradientes, esto garantiza que los objetivos 
 mantengan un significado semántico independiente, en lugar de ser simples variables latentes optimizadas de manera conjunta.
 
-En el caso del worker, también se emplea una red LSTM para mantener un estado interno y poder capturar información relevante,
-pero en este caso, el worker recibe tanto la percepción del entorno como el objetivo del mánager. El worker emplea esta información
+En el caso del \textit{worker}, también se emplea una red LSTM para mantener un estado interno y poder capturar información relevante,
+pero en este caso, el \textit{worker} recibe tanto la percepción del entorno como el objetivo del \textit{manager}. El \textit{worker} emplea esta información
 para predecir la acción que debe realizar para alcanzar el objetivo. La acción se predice en el espacio de acciones, y se ejecuta,
 lo que proporciona un nuevo estado y un refuerzo que se emplea para entrenar las redes.
 
@@ -259,18 +259,18 @@ Finalmente, aunque inicialmente se partió de episodios partiendo del punto más
 Para comprobar la efectividad de estos métodos, se han realizado diferentes pruebas e implementaciones. El primer experimento
 se basa en una implementación que refleja fielmente los alineamientos de los sistemas de control feudales descritos. 
 
-Basándose en el ejemplo de la publicación, se han planteado una jerarquía de cuatro niveles en la que cada mánager tiene la mitad de resolución 
-que el nivel anterior (Véase Fig.\ref{fig:feudal-abstract}). Además, los manager tienen acceso al estado con la presencia de monedas en cada región.  
+Basándose en el ejemplo de la publicación, se han planteado una jerarquía de cuatro niveles en la que cada \textit{manager} tiene la mitad de resolución 
+que el nivel anterior (Véase Fig.\ref{fig:feudal-abstract}). Además, los \textit{managers} tienen acceso al estado con la presencia de monedas en cada región.  
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.7\columnwidth]{abstractions.png}
-    \caption{Abstracciones y Niveles de Manager. Cuadros marcados: salida (verde), monedas (amarillo) y entrada (rojo) \label{fig:feudal-abstract}}
+    \caption{Abstracciones y Niveles de \textit{Manager}. Cuadros marcados: salida (verde), monedas (amarillo) y entrada (rojo) \label{fig:feudal-abstract}}
 \end{figure}
 
 A pesar de que este método se presenta prometedor, los resultados obtenidos no son aceptables (Fig \ref{fig:q-orig-results}). Para el 
 problema base de navegación sin tareas intermedias, el algoritmo ha fallado en alcanzar el objetivo reiteradamente. Se destaca la falta
-de obediencia por parte del worker que deriva en una mejora en el número de pasos y recompensa. No obstante, esto indica que el problema 
+de obediencia por parte del \textit{worker} que deriva en una mejora en el número de pasos y recompensa. No obstante, esto indica que el problema 
 se encuentra en los \textit{managers} y sus órdenes. 
 
 \begin{figure}[H]
@@ -294,17 +294,17 @@ de abstracción; aquel que veía el mapa de estados en la escala original. Por l
 quedarse con únicamente 2: un gerente encargado de determinar la siguiente zona destino y otro agente encargado en navegar hasta 
 dicha posición de interés. Dicha estructura contaba con las mismas limitaciones y políticas de recompensa definidas para el proceso anterior.
 
-Para facilitar el arranque y el uso del mánager desde el principio, se facilitaba al mánager una pista de la localización de las monedas que 
+Para facilitar el arranque y el uso del \textit{manager} desde el principio, se facilitaba al \textit{manager} una pista de la localización de las monedas que 
 debían ser recogidas para que guiara al trabajador (\textit{worker}) hacia dichas zonas sin necesidad de un proceso inicial donde las directrices del
-manager podían ser “ignoradas” debido a su aleatoriedad. 
+\textit{manager} podían ser “ignoradas” debido a su aleatoriedad. 
 
-El trabajador a su vez realizaba un proceso de exploración que se veía recompensado cuando alcanzaba el punto objetivo determinado por el mánager.
+El trabajador a su vez realizaba un proceso de exploración que se veía recompensado cuando alcanzaba el punto objetivo determinado por el \textit{manager}.
 Mediante estas exploraciones, iba creando sus caminos o matrices Q que iba actualizando y afinando con el fin de encontrar el camino óptimo a
-partir de las recompensas obtenidas por obedecer al mánager.
+partir de las recompensas obtenidas por obedecer al \textit{manager}.
 
 En cuanto al proceso de aprendizaje, se incluyeron diferentes implementaciones para ver la influencia que estas variaciones o perturbaciones
 tenían en el proceso de aprendizaje del super-agente. Las perturbaciones más comunes consistían en limitar el conocimiento que tenía el 
-teacher (dándole solo el conocimiento de la solución empezando desde las coordenadas (1,1) o el conocimiento completo) o variando la posición
+\textit{teacher} (dándole solo el conocimiento de la solución empezando desde las coordenadas (1,1) o el conocimiento completo) o variando la posición
 de comienzo del agente.
 
 En cuento a los resultados que se obtuvieron sin ayudas externas, el proceso de aprendizaje era más lento al tener que explorar muchos estados y
@@ -318,8 +318,8 @@ En cuento a los resultados que se obtuvieron sin ayudas externas, el proceso de 
     \caption{Primeras 1000 iteraciones sin ayuda (16x16)\label{fig:FuN1}}
 \end{figure}
 
-Sin embargo, la influencia de un teacher con conocimiento de un solo camino ante el que siempre tenía la solución óptima suponía una gran diferencia.
- Mediante esta ayuda, el worker era capaz de afinar mejor la ruta a seguir y por lo tanto se vio un incremento en la cantidad de refuerzo medio que 
+Sin embargo, la influencia de un \textit{teacher} con conocimiento de un solo camino ante el que siempre tenía la solución óptima suponía una gran diferencia.
+ Mediante esta ayuda, el \textit{worker} era capaz de afinar mejor la ruta a seguir y por lo tanto se vio un incremento en la cantidad de refuerzo medio que 
  se obtenían, pasando este a ser un valor positivo.
 
 Aun así, al no contener información explotable desde todas las zonas del mapa de estados, se observaban procesos de oscilaciones también en los momentos
@@ -345,7 +345,7 @@ La máxima mejora del arranque inicial se logró mediante la introducción de ru
     \caption{Primeras 1000 iteraciones con ayuda compleja (16x16)\label{fig:FuN3}}
 \end{figure}
 
-En conclusión, esta nueva estructura feudal, de un noble (\textit{mánager}) y un subordinado (\textit{worker}), supuso una mejora en comparación con el nivel anterior debida a la simplicidad y mayor énfasis en las limitaciones del mapa de estados que permitía definir. Mediante los experimentos que se realizaron se observó una mejora tanto en el proceso de aprendizaje como en la capacidad de llegar a soluciones en mapas de 20x20 tras 9000 iteraciones en caso de no incluir la ayuda externa o 1000 iteraciones cuando se le facilitaba el conocimiento explotable en 3 rutas. 
+En conclusión, esta nueva estructura feudal, de un noble (\textit{manager}) y un subordinado (\textit{worker}), supuso una mejora en comparación con el nivel anterior debida a la simplicidad y mayor énfasis en las limitaciones del mapa de estados que permitía definir. Mediante los experimentos que se realizaron, se observó una mejora tanto en el proceso de aprendizaje como en la capacidad de llegar a soluciones en mapas de 20x20 tras 9000 iteraciones en caso de no incluir la ayuda externa o 1000 iteraciones cuando se le facilitaba el conocimiento explotable en 3 rutas. 
 
 \begin{figure}[H]
     \centering
@@ -369,7 +369,7 @@ se reinicia) y para comprobar si el modelo aprende correctamente se analizó si 
     \caption{Pérdida de la primera versión.\label{fig:FuN6}}
 \end{figure}
 
-En la segunda versión, y para intentar mejorar la precisión del modelo, se añadió otra regla que penalizaba al modelo cuanto más lejos estuviera del objetivo definido por el mánager, para lo que se empleó la distancia de Manhattan. Esta nueva versión 
+En la segunda versión, y para intentar mejorar la precisión del modelo, se añadió otra regla que penalizaba al modelo cuanto más lejos estuviera del objetivo definido por el \textit{manager}, para lo que se empleó la distancia de Manhattan. Esta nueva versión 
 produjo resultados más inestables, donde no se llega a apreciar una auténtica mejora del modelo a lo largo del tiempo; los resultados se comparan con los de la versión anterior en la siguiente gráfica. Hay que tener en cuenta que la pérdida no está
 en la misma escala entre las dos versiones, y lo importante que se debe observar es una disminución de esta a lo largo del tiempo, lo que indica que el modelo está aprendiendo, independientemente de la escala real de la pérdida. En la primera versión se 
 penalizaba menos al modelo y por eso parece que tiene una pérdida menor, pero no quiere decir que sea mejor.
@@ -391,6 +391,8 @@ Los resultados de esta versión, comparados con las otras dos, son los siguiente
     \includegraphics[width=0.9\columnwidth]{FuN_3.png}
     \caption{Pérdida de todas versiones.\label{fig:FuN5}}
 \end{figure}
+
+Se observa que el modelo final, representado por la línea verde, sí que aprende, pero de manera muy lenta e inestable, sin llegar a alcanzar resultados óptimos. 
 
 \section{Conclusiones}
 En base al trabajo realizado, se puede concluir que las técnicas de aprendizaje por refuerzo jerárquico, específicamente el Aprendizaje por Refuerzo Feudal, añaden cierto valor añadido en aquellos problemas que cuentan con un fin complejo que se puede presentar como una suma de tareas a tratar de forma paralela y ordenada; en otras palabras, de forma jerárquica. Este sistema permite determinar agentes para cada nivel de abstracción estrictamente necesaria para la tarea, abstrayendo la decisión de problemas e inconvenientes pertenecientes a otras subtareas del problema.
