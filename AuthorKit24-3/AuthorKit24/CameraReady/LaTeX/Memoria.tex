@@ -264,7 +264,7 @@ que el nivel anterior (Véase Fig.\ref{fig:feudal-abstract}). Además, los manag
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.7\columnwidth]{abstractions.png}
+    \includegraphics[width=\columnwidth]{abstractions.png}
     \caption{Abstracciones y Niveles de Manager. Cuadros marcados: salida (verde), monedas (amarillo) y entrada (rojo) \label{fig:feudal-abstract}}
 \end{figure}
 
@@ -275,7 +275,7 @@ se encuentra en los \textit{managers} y sus órdenes.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.9\columnwidth]{q-original-results.png}
+    \includegraphics[width=\columnwidth]{q-original-results.png}
     \caption{Feudal Q-Learning con 0 monedas.\label{fig:q-orig-results}}
 \end{figure}
 
@@ -393,12 +393,24 @@ Los resultados de esta versión, comparados con las otras dos, son los siguiente
 \end{figure}
 
 \section{Conclusiones}
-En base al trabajo realizado, se puede concluir que las técnicas de aprendizaje por refuerzo jerárquico, específicamente el Aprendizaje por Refuerzo Feudal, añaden cierto valor añadido en aquellos problemas que cuentan con un fin complejo que se puede presentar como una suma de tareas a tratar de forma paralela y ordenada; en otras palabras, de forma jerárquica. Este sistema permite determinar agentes para cada nivel de abstracción estrictamente necesaria para la tarea, abstrayendo la decisión de problemas e inconvenientes pertenecientes a otras subtareas del problema.
+En base al trabajo realizado, se puede concluir que las técnicas de aprendizaje por refuerzo jerárquico, específicamente el Aprendizaje por Refuerzo Feudal, 
+añaden cierto valor añadido en aquellos problemas que cuentan con un fin complejo que se puede presentar como una suma de tareas a tratar de forma paralela 
+y ordenada; en otras palabras, de forma jerárquica. Este sistema permite determinar agentes para cada nivel de abstracción estrictamente necesaria para la 
+tarea, abstrayendo la decisión de problemas e inconvenientes pertenecientes a otras subtareas del problema.
 
-Por el otro lado, se ha podido observar la influencia de la sobre-división de las tareas. Al dividir una tarea en demasiados niveles de abstracción, se realizaba una sobre-abstracción del espacio, lo que llevaba a tomar decisiones sin la información necesaria para dicha labor. En el caso del estudio realizado, dicho problema se ve bien representado en el caso de la selección de los destinos a navegar, donde debido a la excesiva abstracción del mapa de estados, se perdía la información espacial de las paredes. 
+Por el otro lado, se ha podido observar la influencia de la sobre-división de las tareas. Al dividir una tarea en demasiados niveles de abstracción, se realizaba
+una sobre-abstracción del espacio, lo que llevaba a tomar decisiones sin la información necesaria para dicha labor. En el caso del estudio realizado, dicho problema
+se ve bien representado en el caso de la selección de los destinos a navegar, donde debido a la excesiva abstracción del mapa de estados, se perdía la información
+espacial de las paredes. 
 
-Debido a ello, se estima que, aunque dicha decisión se tome como abstraible en otras investigaciones, la naturaleza cerrada en cuestiones de navegación del problema tratado anulaba dicha característica.
+Debido a ello, se estima que, aunque dicha decisión se tome como abstraible en otras investigaciones, la naturaleza cerrada en cuestiones de navegación del problema
+tratado anulaba dicha característica.
 
+\section{Trabajo Fúturo}
+En vista de las limitaciones presentes del entorno, se plantea como trabajo para continuar 
+el cambio del método de generación del laberinto, la búsqueda de un abstracción más eficiente 
+para el sistema de control feudal. Con estas medidas, se podrían obtener resultados similares o 
+mejores para el método basado en q-learning para el problema propuesto.
 
 \bibliography{aaai24}
 
