@@ -100,8 +100,8 @@
     \textsuperscript{\rm 1, \rm 2, \rm 3}Universidad Carlos III de Madrid\\
     
     \textsuperscript{\rm 1}100538592@alumnos.uc3m.es, 
-    \textsuperscript{\rm 2}100538592@alumnos.uc3m.es, 
-    \textsuperscript{\rm 3}100538592@alumnos.uc3m.es 
+    \textsuperscript{\rm 2}100537352@alumnos.uc3m.es, 
+    \textsuperscript{\rm 3}100451058@alumnos.uc3m.es 
 }
 
 
@@ -224,11 +224,6 @@ lo que proporciona un nuevo estado y un refuerzo que se emplea para entrenar las
 
 
 
-
-\subsection{Definición}
-
-\subsection{Estado del arte}
-
 \section{Evaluación práctica}
 
 
@@ -237,16 +232,52 @@ Debido a la disipación de las paredes que se experimentaba al realizar las abst
 Para enfrentar dicha adversidad se probó a disminuir el número de gerentes/subgerentes, limitándose al uso del gerente de menor nivel de abstracción; aquel que veía el mapa de estados en la escala original. Por lo tanto, se realizó una disminución de agentes para quedarse con únicamente 2: un gerente encargado de determinar la siguiente zona destino y otro agente encargado en navegar hasta dicha posición de interés. Dicha estructura contaba con las mismas limitaciones y políticas de recompensa definidas para el proceso anterior.
 
 
-Para facilitar el arranque y el uso del mánager desde el principio, se facilitaba al mánager una pista de la localización de las monedas que debían ser recogidas para que guiara al trabajador (o worker) hacía dichas zonas sin necesidad de un proceso inicial donde las directrices del worker podían ser “ignoradas” debida a su aleatoriedad. 
+Para facilitar el arranque y el uso del mánager desde el principio, se facilitaba al mánager una pista de la localización de las monedas que debían ser recogidas para que guiara al trabajador (o worker) hacía dichas zonas sin necesidad de un proceso inicial donde las directrices del manager podían ser “ignoradas” debida a su aleatoriedad. 
 
 El trabajador a su vez realizaba un proceso de exploración que se veía recompensado cuando alcanzaba el punto objetivo determinado por el mánager. Mediante estas exploraciones, iba creando sus caminos o matrices Q que iba actualizando y afinando con el fin de encontrar el camino óptimo a partir de las recompensas obtenidas por llegar a los destinos asignados por el manager.
 
+
+\subsection{Pruebas Q Learning}
 En cuanto al proceso de aprendizaje, se incluyeron diferentes implementaciones para ver la influencia que estas variaciones o perturbaciones tenían en el proceso de aprendizaje del super-agente. Las perturbaciones más comunes consistían en limitar el conocimiento que tenía el teacher (dándole solo el conocimiento de la solución empezando desde las coordenadas (1,1) o el conocimiento completo) o variando la posición de comienzo del agente.
 
-En cuento a los resultados se observó como sin ayudas externas el proceso de aprendizaje era más lento al tener que explorar muchos estados y no contar con una ayuda externa en caso de caer en bucles debido a los estrechos caminos que componían el mapa. Cuando se le introducía la ayuda externa, teacher, dicho proceso de aprendizaje se veía acortado siendo capaz de definir la ruta optima con mayor rapidez. Sin embargo, la influencia de un teacher con conocimiento de un solo camino ante el que siempre tenía la solución optima suponía una gran diferencia también en los momentos en los que se partía de zonas inexploradas. Esto se debía a que el agente tenía que lograr llegar hasta le punto más cercano de conocimiento del teacher para poder obtener su ayuda, lo que lo ponía en similar situación que cuando no contaba con ayuda externa.
 
-En conclusión, esta nueva estructura feudal, de un noble (mánager) y un subordinado (worker), supuso una mejora en comparación con el nivel anterior debida a la simplicidad y mayor énfasis en las limitaciones del mapa de estados que permitía definir. Mediante los experimentos que se realizaron se observó no solo una mejora en el proceso de aprendizaje si no que una capacidad de llegar a soluciones en mapas de 20x20 tras 9000 iteraciones en caso de no incluir la ayuda del teacher o 1000 iteraciones cuando se le facilitaba un teacher para poder preguntar (limitando el número de consultas a realizar en 3xP; siendo P los pasos del camino más corto para solucionar el problema). 
+En cuento a los resultados se observieron sin ayudas externas el proceso de aprendizaje era más lento al tener que explorar muchos estados y no contar con una ayuda externa en caso de caer en bucles debido a los estrechos caminos que componían el mapa (Figure 2). Debido a este desconocimiento y falta de ayuda, las primeras iteraciones oscilaban en refuerzos negativos en su mayoría debido al proceso de exploración y explotación de conocimientos inciertos en dichas iteraciones. 
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\columnwidth]{QL_sin_ayuda_externa.png}
+    \caption{Primeras 1000 iteraciones sin ayuda (16x16)}
+    \label{fig:FuN1}
+\end{figure}
+
+Sin embargo, la influencia de un teacher con conocimiento de un solo camino ante el que siempre tenía la solución optima suponía una gran diferencia. Mediante esta ayuda, el worker era capaz de afinar mejor la ruta a seguir y por lo tanto se vió un incremento en la cantidad de refuerzo medio que se obtenían, pasando este a ser un valor positivo.
+
+Aún así, al no contener información explotable desde todas las zonas del mapa de estados se observaban procesos de oscilaciones también en los momentos en los que se partía de zonas inexploradas. Esto se debía a que el agente tenía que lograr llegar hasta el punto más cercano de donde tenía opción de obtener conocimiento útil para poder obtener una ayuda, lo que lo ponía en similar situación que cuando no contaba con ayuda externa.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\columnwidth]{QL_ayuda_externa_1path.png}
+    \caption{Primeras 1000 iteraciones con ayuda simple (16x16)}
+    \label{fig:FuN1}
+\end{figure}
+
+La máxima mejora del arranque inicial se logro mediante la introducción de rutas desde 3 zonas diferentes del mapa. Aunque dependiendo del azar estas rutas podrían aportar información redundante al tener inicios en lugares aleatorios del mapa, englobaban una mayor cantidad de estados, ofreciendo información explotable y útil en una subsección mayor del mapa. Debido a esto, la explotación del conocimiento y el reajuste ante un paso de exploración indeseado eran corregidos lo que llevaba a evitar bucles o episodios perdidos.\footnote{\textsuperscript{}Situaciones en las que, debido a entrar en un callejón, se realizaban pasos hasta llegar al límite de los mismos por episodio.}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\columnwidth]{QL_ayuda_externa_3paths.png}
+    \caption{Primeras 1000 iteraciones con ayuda compleja (16x16)}
+    \label{fig:FuN1}
+\end{figure}
+
+En conclusión, esta nueva estructura feudal, de un noble (mánager) y un subordinado (worker), supuso una mejora en comparación con el nivel anterior debida a la simplicidad y mayor énfasis en las limitaciones del mapa de estados que permitía definir. Mediante los experimentos que se realizaron se observó no solo una mejora en el proceso de aprendizaje si no que una capacidad de llegar a soluciones en mapas de 20x20 tras 9000 iteraciones en caso de no incluir la ayuda del teacher o 1000 iteraciones cuando se le facilitaba el conocimiento explotable en 3 rutas. 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\columnwidth]{QL_resumen_final.png}
+    \caption{Resultados tras 9000 iteraciones (20x20)}
+    \label{fig:FuN1}
+\end{figure}
 
 \subsection{Pruebas FuN}
 Otra técnica empleada de aprendizaje por refuerzo feudal son las FeUdal Networks (FuN), basadas en LSTMs. Se creó una adaptación de este tipo de red para que pudiera funcionar en el dominio tratado, y se establecieron y probaron distintos refuerzos que proporcionar a la red, evaluando su efectividad a la hora de encontrar soluciones.
