@@ -7,6 +7,7 @@
 \usepackage{courier}  % DO NOT CHANGE THIS
 \usepackage[hyphens]{url}  % DO NOT CHANGE THIS
 \usepackage{graphicx} % DO NOT CHANGE THIS
+\usepackage[T1]{fontenc}
 \urlstyle{rm} % DO NOT CHANGE THIS
 \def\UrlFont{\rm}  % DO NOT CHANGE THIS
 \usepackage{natbib}  % DO NOT CHANGE THIS AND DO NOT ADD ANY OPTIONS TO IT
@@ -237,28 +238,48 @@ monedas (\textit{tokens}) para poder abrir la meta. Estas monedas están reparti
 \end{figure}
 
 En términos de implementación, los laberintos se han creado usando el algoritmo de Wilson. Las monedas se posicionan
-aleatoriamente en casillas libres del mapa. Para poder ser usados en CNN y RNN, por cada celda original se obtienen 4 celdsa con las paredes.
-Esto genera un laberinto con dos veces el tamaño original como se ve en Fig. \ref{fig:maze-example}.
+aleatoriamente en casillas libres del mapa. Para poder ser usados en CNN y RNN, por cada celda original se obtienen 4 celdas con las paredes.
+Esto genera un laberinto con el doble del tamaño original como se ve en Fig. \ref{fig:maze-example}.
+
+Para los experimentos, se iniciaba con 0 monedas y en base a la capacidad de aprender el camino y obtener los resultados, se añadían monedas o dejaba el experimento.
+De esta manera, se podía estudiar de manera directamente el efecto del incremento en la complejidad en la capacidad de adaptarse y aprender el laberinto. 
+
+Se debe destacar que en cada experimento, el laberinto generado es distinto. No se ha podido mantener el mismo laberinto en todas ocasiones. No obstante,
+se pueden comparar los resultados debido a que todos comparten las mismas características y son validos.
 
 Para la experimentación, los agentes tienen como estado base (previo a transformaciones propias del método) la vista global del laberinto y la posición como coordenadas. 
 Como acciones base, los agentes tienen las acciones de movimiento cardinales estándar NSWE (North-South-West-East). En algunos métodos, 
 también se añade la acción $*$ para los \textit{managers}.
 
-\subsection{Experimentos}
+\subsection{Experimento: Feudal Q-Learning}
 Para comprobar la efectividad de estos métodos, se ha realizado diferentes pruebas e implementaciones. El primer experimento
-se basa en una implementación que refleja fielmente los alineamientos de los sistemas de control feudales descritos. Basandose
-en el ejemplo de la publicación, se han planteado una jerarquía de cuatro niveles en la que cada manager tiene la mitad de resolución 
+se basa en una implementación que refleja fielmente los alineamientos de los sistemas de control feudales descritos. 
+
+Basandose en el ejemplo de la publicación, se han planteado una jerarquía de cuatro niveles en la que cada manager tiene la mitad de resolución 
 que el nivel anterior (Veasé Fig.\ref{fig:feudal-abstract}). Además, los manager tienen acceso al estado con la presencia de monedas en cada región.  
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.7\columnwidth]{abstractions.png}
-    \caption{Abstracciones y Niveles de Manager (cuadrado verde)\label{fig:feudal-abstract}}
+    \caption{Abstracciones y Niveles de Manager. Cuadros marcados: salida (verde), monedas (amarrillo) y entrada (rojo) \label{fig:feudal-abstract}}
 \end{figure}
 
+A pesar de que este método se presenta prometedor, los resultados obtenidos no son aceptables (Fig \ref{fig:q-orig-results}). Para el 
+problema base de navegación sin tareas intermedias, el algoritmo ha fallado en alcanzar el objetivo reiteradamente. Se destaca la falta
+de obediencia por parte del worker que deriva en una mejora en el número de pasos y recompensa. No obstante, esto indica que el problema 
+se encuentra en los \textit{managers} y sus ordenes. 
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\columnwidth]{q-original-results.png}
+    \caption{Feudal Q-Learning con 0 monedas.\label{fig:q-orig-results}}
+\end{figure}
 
-\subsection{Resultados del Experimento}
+Tras una análisis de los resultados, se ha detectado un problema de representación que no se tenía en el experimento original. El laberinto contiene 
+una gran cantidad de caminos sin salida y cerrados. En estos casos, los \textit{managers} no tienen percepción de las paredes y su representación puede incluir
+intersecciones entre varias zonas paralelas. Este problema deriva en ordenes inválidas por parte de los \textit{manager} que desorientan al \textit{worker}. 
+
+\subsection{Experimento: Feudal Q-Learning Modificado}
 
 Debido a la disipación de las paredes que se experimentaba al realizar las abstracciones del mapa de estados a medida que se disminuía
 el nivel del gerente, el aprendizaje resultaba altamente perjudicado llegando trasmitirse ordenes imposibles de realizar debida a la
@@ -276,8 +297,6 @@ manager podían ser “ignoradas” debida a su aleatoriedad.
 El trabajador a su vez realizaba un proceso de exploración que se veía recompensado cuando alcanzaba el punto objetivo determinado por el mánager.
 Mediante estas exploraciones, iba creando sus caminos o matrices Q que iba actualizando y afinando con el fin de encontrar el camino óptimo a
 partir de las recompensas obtenidas por llegar a los destinos asignados por el manager.
-
-\subsubsection{Pruebas Q Learning}
 
 En cuanto al proceso de aprendizaje, se incluyeron diferentes implementaciones para ver la influencia que estas variaciones o perturbaciones
 tenían en el proceso de aprendizaje del super-agente. Las perturbaciones más comunes consistían en limitar el conocimiento que tenía el 
@@ -332,7 +351,7 @@ En conclusión, esta nueva estructura feudal, de un noble (mánager) y un subord
     \label{fig:FuN1}
 \end{figure}
 
-\subsubsection{Pruebas FuN}
+\subsection{Experimento: FeUdal Networks (FUN)}
 
 Otra técnica empleada de aprendizaje por refuerzo feudal son las FeUdal Networks (FuN), basadas en LSTMs. Se creó una adaptación de este tipo de red para que pudiera funcionar en el dominio tratado, y se establecieron y probaron distintos refuerzos que proporcionar a la red, evaluando su efectividad a la hora de encontrar soluciones.
 
