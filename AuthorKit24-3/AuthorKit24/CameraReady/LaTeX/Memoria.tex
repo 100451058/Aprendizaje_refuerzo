@@ -156,6 +156,11 @@ es operado con distintos grados de abstracción tanto en el estado como en tempo
 del estado y dan ordenes de acción y en workers que realizan las acciones. Esta colaboración jerárquica permite aprender y ejecutar tareas de manera más eficiente, aprovechando
 la modularidad y la capacidad de escalar a problemas complejos.
 
+% FuN
+Otro enfoque es el propuesto por A. S. Vezhnevets et al. \cite{vezhnevets2017feudal}, que plantea las redes feudales como una arquitectura de aprendizaje por refuerzo jerárquico.
+Este sistema emplea la estructura manager-worker mencionada anteriormente, pero añade redes neuronales recurrentes (específicamente LSTMs) como mecanismo de funcionamiento tanto del 
+manager como del worker. Este enfoque se ha mostrado efectivo en la resolución de problemas complejos; por lo que puede ser de utilidad en la resolución del problema propuesto en este trabajo.
+
 \subsection{Sistemas de Control Feudal}
 % Que son
 En 1992, P. Dayan y G. Hinton \cite{dayan1992feudal} definen los sistemas de control feudal como un reflejo de las sociedades feudales. En ellos, se 
@@ -186,7 +191,7 @@ con su nivel de obediencia.
 
 \subsection{FeUdal Networks: FuN}
 
-Las redes feudales se basan en la arquitectura de aprendiaje por refuerzo feudal, 
+Las redes feudales se basan en la arquitectura de aprendiaje por refuerzo feudal \cite{vezhnevets2017feudal}, 
 una arquitectura del aprendizaje por refuerzo jerárquico. Esta arquitectura emplea un sistema de control, conocido
 como \textit{mánager}, que asigna tareas a un subsistema conocido como \textit{worker} que debe aprender a ejecutarlas de manera óptima.
 
