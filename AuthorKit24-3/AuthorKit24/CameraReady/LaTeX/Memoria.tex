@@ -142,10 +142,10 @@ de navegación en laberintos y obtención de subobjetivos.
 % Que es el aprendizaje jerárquico
 El aprendizaje por refuerzo jerárquico (HRL por sus siglas en inglés) se ha consolidado como una estrategia para abordar problemas complejos
 que involucran secuencias de tareas. Este enfoque se originó como una extensión de los modelos de decisión de Markov para tareas de largo horizonte
-de decisión mediante el uso de modelos semi-MDP\cite{sutton1999between}. Con ellos, se establecen las bases teóricas para la abstracción temporal.
+de decisión mediante el uso de modelos semi-MDP \cite{sutton1999between}. Con ellos, se establecen las bases teóricas para la abstracción temporal.
 
-Posteriormente, con los años, han surgido una serie de algoritmos que implementa y abordan las limitaciones de HRL. 
-Dietterich \cite{dietterich2000hierarchical} propuso el modelo MaxQ, descompone las tareas en jerarquías de subtareas
+Posteriormente, con los años, han surgido una serie de algoritmos que implementan y abordan las limitaciones de HRL. 
+Dietterich \cite{dietterich2000hierarchical} propuso el modelo MaxQ, que descompone las tareas en jerarquías de subtareas
 para la optimización y planificación de diferentes funciones de valor. Por otro lado, en \cite{barto2003recent} se exploran 
 los avances en estructuras jerárquicas para diferentes dominios y la relevancia de HRL para la resolución de problemas de 
 gran complejidad.  
@@ -153,7 +153,7 @@ gran complejidad.
 % Qué el aprendizaje feudal
 Dentro de este marco teórico, el Aprendizaje Feudal se presenta como una técnica que organiza las tareas en niveles jerárquicos, donde cada nivel 
 es operado con distintos grados de abstracción tanto en el estado como en temporalidad. Este enfoque \cite{dayan1992feudal} divide la jerarquía en managers, que operan con abstracciones 
-del estado y dan ordenes de acción y en workers que realizan las acciones. Esta colaboración jerárquica permite aprender y ejecutar tareas de manera más eficiente, aprovechando
+del estado y dan órdenes de acción y en workers que realizan las acciones. Esta colaboración jerárquica permite aprender y ejecutar tareas de manera más eficiente, aprovechando
 la modularidad y la capacidad de escalar a problemas complejos.
 
 % FuN
@@ -166,7 +166,7 @@ manager como del worker. Este enfoque se ha mostrado efectivo en la resolución 
 En 1992, P. Dayan y G. Hinton \cite{dayan1992feudal} definen los sistemas de control feudal como un reflejo de las sociedades feudales. En ellos, se 
 define una jerarquía de \textit{managers}, \textit{supermanagers} y \textit{workers}. Cada uno opera con un grado de abstracción de estados y temporal
 distinto. Los managers tienen poder absoluto sobre sus subordinados. Pueden dar órdenes que deben ser seguidas, dan tareas, recompensas y castigos si 
-las órdenes no son seguidas. Esta estructura de jerárquica de mando permite aprender y comprender tareas complejas con el fin de maximizar el refuerzo.
+las órdenes no son seguidas. Esta estructura jerárquica de mando permite aprender y comprender tareas complejas con el fin de maximizar el refuerzo.
 
 Este sistema de control se basa en dos principios:
 \begin{itemize}
@@ -185,13 +185,13 @@ Estos principios siguen una dinámica de poder y gestión similar a la de socied
 No obstante, todos se alinean para la obtención y maximización de una recompensa (o refuerzo) dado por el problema.
 
 Para el aprendizaje e implementación, se propuso el uso de una versión modificada del Aprendizaje Q-Learning. Cada \textit{mánager}, \textit{submanager} y
-\textit{worker} tiene asociada una función acción-valor (\textit{Q Tabla}). La principal diferencia con respecto el algoritmo original es la 
+\textit{worker} tiene asociada una función acción-valor (\textit{Q Tabla}). La principal diferencia con respecto al algoritmo original es la 
 modificación de la función de recompensa. En este caso, se modifica en función de las acciones tomadas por cada nivel de la jerarquía en consonancia 
 con su nivel de obediencia. 
 
 \subsection{FeUdal Networks: FuN}
 
-Las redes feudales se basan en la arquitectura de aprendiaje por refuerzo feudal \cite{vezhnevets2017feudal}, 
+Las redes feudales se basan en la arquitectura de aprendizaje por refuerzo feudal \cite{vezhnevets2017feudal}, 
 una arquitectura del aprendizaje por refuerzo jerárquico. Esta arquitectura emplea un sistema de control, conocido
 como \textit{mánager}, que asigna tareas a un subsistema conocido como \textit{worker} que debe aprender a ejecutarlas de manera óptima.
 
@@ -216,7 +216,7 @@ es un vector unitario, lo que asegura que el worker se enfoque en la dirección 
 
 Para entrenar el mánager, se emplea la recompensa obtenida, y emplea la similitud coseno entre la dirección en la que 
 se movió el worker y la compara con el objetivo establecido, empleando la similitud coseno como función de pérdida.
-Esta pérdida incentiva al Manager a emitir objetivos que maximicen el progreso hacia estados ventajosos.
+Esta pérdida incentiva al manager a emitir objetivos que maximicen el progreso hacia estados ventajosos.
 
 El vector de objetivos se envía al worker sin propagar gradientes, esto garantiza que los objetivos 
 mantengan un significado semántico independiente, en lugar de ser simples variables latentes optimizadas de manera conjunta.
@@ -241,12 +241,12 @@ monedas (\textit{tokens}) para poder abrir la meta. Estas monedas están reparti
 
 En términos de implementación, los laberintos se han creado usando el algoritmo de Wilson. Las monedas se posicionan
 aleatoriamente en casillas libres del mapa. Para poder ser usados en CNN y RNN, por cada celda original se obtienen 4 celdas con las paredes.
-Esto genera un laberinto con el doble del tamaño original como se ve en Fig. \ref{fig:maze-example}.
+Esto genera un laberinto con el doble del tamaño original, como se ve en Fig. \ref{fig:maze-example}.
 
-Para los experimentos, se iniciaba con 0 monedas y en base a la capacidad de aprender el camino y obtener los resultados, se añadían monedas o dejaba el experimento.
-De esta manera, se podía estudiar de manera directamente el efecto del incremento en la complejidad en la capacidad de adaptarse y aprender el laberinto. 
+Para los experimentos, se iniciaba con 0 monedas y, en base a la capacidad de aprender el camino y obtener los resultados, se añadían monedas o se cambiaba el experimento.
+De esta manera, se podía estudiar de manera directa el efecto del incremento en la complejidad en la capacidad de adaptarse y aprender el laberinto. 
 
-Se debe destacar que, en cada experimento, el laberinto generado es distinto. No se ha podido mantener el mismo laberinto en todas ocasiones. No obstante,
+Se debe destacar que, en cada experimento, el laberinto generado es distinto. No se ha podido mantener el mismo laberinto en todas las ocasiones. No obstante,
 se pueden comparar los resultados debido a que todos comparten las mismas características y son válidos.
 
 Para la experimentación, los agentes tienen como estado base (previo a transformaciones propias del método) la vista global del laberinto y la posición como coordenadas. 
@@ -256,16 +256,16 @@ también se añade la acción $*$ para los \textit{managers}.
 Finalmente, aunque inicialmente se partió de episodios partiendo del punto más alejado a la meta, se decidió implementar una política de inicio aleatorio en favor de la exploración y capacidad del agente para solventar el problema desde diferentes áreas del laberinto.
 
 \subsection{Experimento: Feudal Q-Learning}
-Para comprobar la efectividad de estos métodos, se ha realizado diferentes pruebas e implementaciones. El primer experimento
+Para comprobar la efectividad de estos métodos, se han realizado diferentes pruebas e implementaciones. El primer experimento
 se basa en una implementación que refleja fielmente los alineamientos de los sistemas de control feudales descritos. 
 
 Basándose en el ejemplo de la publicación, se han planteado una jerarquía de cuatro niveles en la que cada mánager tiene la mitad de resolución 
-que el nivel anterior (Veasé Fig.\ref{fig:feudal-abstract}). Además, los mánager tienen acceso al estado con la presencia de monedas en cada región.  
+que el nivel anterior (Véase Fig.\ref{fig:feudal-abstract}). Además, los manager tienen acceso al estado con la presencia de monedas en cada región.  
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.7\columnwidth]{abstractions.png}
-    \caption{Abstracciones y Niveles de Manager. Cuadros marcados: salida (verde), monedas (amarrillo) y entrada (rojo) \label{fig:feudal-abstract}}
+    \caption{Abstracciones y Niveles de Manager. Cuadros marcados: salida (verde), monedas (amarillo) y entrada (rojo) \label{fig:feudal-abstract}}
 \end{figure}
 
 A pesar de que este método se presenta prometedor, los resultados obtenidos no son aceptables (Fig \ref{fig:q-orig-results}). Para el 
@@ -280,13 +280,13 @@ se encuentra en los \textit{managers} y sus órdenes.
 \end{figure}
 
 Tras un análisis de los resultados, se ha detectado un problema de representación que no se tenía en el experimento original. El laberinto contiene 
-una gran cantidad de caminos sin salida y cerrados. En estos casos, los \textit{mánagers} no tienen percepción de las paredes y su representación puede incluir
-intersecciones entre varias zonas paralelas. Este problema deriva en ordenes inválidas por parte de los \textit{mánager} que desorientan al \textit{worker}. 
+una gran cantidad de caminos sin salida y cerrados. En estos casos, los \textit{managers} no tienen percepción de las paredes y su representación puede incluir
+intersecciones entre varias zonas paralelas. Este problema deriva en órdenes inválidas por parte de los \textit{manager} que desorientan al \textit{worker}. 
 
 \subsection{Experimento: Feudal Q-Learning Modificado}
 
 Debido a la disipación de las paredes que se experimentaba al realizar las abstracciones del mapa de estados a medida que se disminuía
-el nivel del gerente, el aprendizaje resultaba altamente perjudicado llegando a trasmitirse ordenes imposibles de realizar debida a la
+el nivel del gerente, el aprendizaje resultaba altamente perjudicado, llegando a transmitirse órdenes imposibles de realizar debido a la
 naturaleza cerrada del mapa del problema.
 
 Para enfrentar dicha adversidad se probó a disminuir el número de gerentes/subgerentes, limitándose al uso del gerente de menor nivel
@@ -295,8 +295,8 @@ quedarse con únicamente 2: un gerente encargado de determinar la siguiente zona
 dicha posición de interés. Dicha estructura contaba con las mismas limitaciones y políticas de recompensa definidas para el proceso anterior.
 
 Para facilitar el arranque y el uso del mánager desde el principio, se facilitaba al mánager una pista de la localización de las monedas que 
-debían ser recogidas para que guiara al trabajador (\textit{worker}) hacía dichas zonas sin necesidad de un proceso inicial donde las directrices del
-manager podían ser “ignoradas” debida a su aleatoriedad. 
+debían ser recogidas para que guiara al trabajador (\textit{worker}) hacia dichas zonas sin necesidad de un proceso inicial donde las directrices del
+manager podían ser “ignoradas” debido a su aleatoriedad. 
 
 El trabajador a su vez realizaba un proceso de exploración que se veía recompensado cuando alcanzaba el punto objetivo determinado por el mánager.
 Mediante estas exploraciones, iba creando sus caminos o matrices Q que iba actualizando y afinando con el fin de encontrar el camino óptimo a
@@ -322,7 +322,7 @@ Sin embargo, la influencia de un teacher con conocimiento de un solo camino ante
  Mediante esta ayuda, el worker era capaz de afinar mejor la ruta a seguir y por lo tanto se vio un incremento en la cantidad de refuerzo medio que 
  se obtenían, pasando este a ser un valor positivo.
 
-Aun así, al no contener información explotable desde todas las zonas del mapa de estados se observaban procesos de oscilaciones también en los momentos
+Aun así, al no contener información explotable desde todas las zonas del mapa de estados, se observaban procesos de oscilaciones también en los momentos
  en los que se partía de zonas inexploradas. Esto se debía a que el agente tenía que lograr llegar hasta el punto más cercano de donde tenía opción 
  de explotar conocimiento útil para poder obtener una ayuda, lo que lo ponía en similar situación que cuando no contaba con ayuda externa.
 
@@ -333,7 +333,7 @@ Aun así, al no contener información explotable desde todas las zonas del mapa 
     
 \end{figure}
 
-La máxima mejora del arranque inicial se logró mediante la introducción de rutas desde 3 zonas diferentes del mapa. Aunque dependiendo del azar estas
+La máxima mejora del arranque inicial se logró mediante la introducción de rutas desde 3 zonas diferentes del mapa. Al depender del azar, estas
  rutas podrían aportar información redundante al tener inicios en lugares aleatorios del mapa, englobaban una mayor cantidad de estados, ofreciendo
   información explotable y útil en una subsección mayor del mapa. Debido a esto, la explotación del conocimiento y el reajuste ante un paso de 
   exploración indeseado eran corregidos lo que llevaba a evitar bucles o episodios perdidos.\footnote{\textsuperscript{}Situaciones en las que, 
@@ -345,7 +345,7 @@ La máxima mejora del arranque inicial se logró mediante la introducción de ru
     \caption{Primeras 1000 iteraciones con ayuda compleja (16x16)\label{fig:FuN3}}
 \end{figure}
 
-En conclusión, esta nueva estructura feudal, de un noble (\textit{mánager}) y un subordinado (\textit{worker}), supuso una mejora en comparación con el nivel anterior debida a la simplicidad y mayor énfasis en las limitaciones del mapa de estados que permitía definir. Mediante los experimentos que se realizaron se observó no solo una mejora en el proceso de aprendizaje si no que una capacidad de llegar a soluciones en mapas de 20x20 tras 9000 iteraciones en caso de no incluir la ayuda externa o 1000 iteraciones cuando se le facilitaba el conocimiento explotable en 3 rutas. 
+En conclusión, esta nueva estructura feudal, de un noble (\textit{mánager}) y un subordinado (\textit{worker}), supuso una mejora en comparación con el nivel anterior debida a la simplicidad y mayor énfasis en las limitaciones del mapa de estados que permitía definir. Mediante los experimentos que se realizaron se observó una mejora tanto en el proceso de aprendizaje como en la capacidad de llegar a soluciones en mapas de 20x20 tras 9000 iteraciones en caso de no incluir la ayuda externa o 1000 iteraciones cuando se le facilitaba el conocimiento explotable en 3 rutas. 
 
 \begin{figure}[H]
     \centering
@@ -383,7 +383,7 @@ penalizaba menos al modelo y por eso parece que tiene una pérdida menor, pero n
 Se comprueba que no mejora demasiado a lo largo del tiempo, y los valores son más inestables, lo que no es necesariamente algo negativo, pero tampoco parece estar ayudando mucho al modelo.
 
 Como tercera versión de este método, se añadió una recompensa por explorar estados nuevos y un castigo por repetir estados, lo que resultó en un nuevo modelo que, si bien sí que parece que aprenda, sigue sin producir soluciones mejores que los otros métodos. Es posible que si se entrenara durante el 
-tiempo suficiente, y modificando los parámetros de las recompensas hasta alcanzar los mejores valores se obtuvieran resultados similares e incluso mejores que los proporcionados por los otros métodos, pero requeriría una gran carga computacional.
+tiempo suficiente, y modificando los parámetros de las recompensas hasta alcanzar los mejores valores, se obtuvieran resultados similares e incluso mejores que los proporcionados por los otros métodos, pero requeriría una gran carga computacional.
 
 Los resultados de esta versión, comparados con las otras dos, son los siguientes.
 \begin{figure}[H]
@@ -393,7 +393,7 @@ Los resultados de esta versión, comparados con las otras dos, son los siguiente
 \end{figure}
 
 \section{Conclusiones}
-En base al trabajo realizado, se puede concluir que las técnicas de aprendizaje como el descrito en este documento, el Aprendizaje por Refuerzo Feudal, añaden cierto valor añadido en aquellos problemas que cuentan con un fin complejo que se puede presentar como una suma de tareas a tratar de forma paralela y ordenada; en otras palabras, de forma jerárquica. Este sistema permite determinar agentes para cada nivel de abstracción estrictamente necesaria para la tarea, abstrayendo la decisión de problemas e inconvenientes pertenecientes a otras subtareas del problema.
+En base al trabajo realizado, se puede concluir que las técnicas de aprendizaje por refuerzo jerárquico, específicamente el Aprendizaje por Refuerzo Feudal, añaden cierto valor añadido en aquellos problemas que cuentan con un fin complejo que se puede presentar como una suma de tareas a tratar de forma paralela y ordenada; en otras palabras, de forma jerárquica. Este sistema permite determinar agentes para cada nivel de abstracción estrictamente necesaria para la tarea, abstrayendo la decisión de problemas e inconvenientes pertenecientes a otras subtareas del problema.
 
 Por el otro lado, se ha podido observar la influencia de la sobre-división de las tareas. Al dividir una tarea en demasiados niveles de abstracción, se realizaba una sobre-abstracción del espacio, lo que llevaba a tomar decisiones sin la información necesaria para dicha labor. En el caso del estudio realizado, dicho problema se ve bien representado en el caso de la selección de los destinos a navegar, donde debido a la excesiva abstracción del mapa de estados, se perdía la información espacial de las paredes. 
 
