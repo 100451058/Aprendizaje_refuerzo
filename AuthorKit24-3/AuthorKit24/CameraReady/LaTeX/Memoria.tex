@@ -394,17 +394,15 @@ Se observa que el modelo final, representado por la línea verde, sí que aprend
 
 \section{Conclusiones}
 En base al trabajo realizado, se puede concluir que las técnicas de aprendizaje por refuerzo jerárquico, específicamente el Aprendizaje por Refuerzo Feudal, 
-añaden cierto valor añadido en aquellos problemas que cuentan con un fin complejo que se puede presentar como una suma de tareas a tratar de forma paralela 
-y ordenada; en otras palabras, de forma jerárquica. Este sistema permite determinar agentes para cada nivel de abstracción estrictamente necesaria para la 
-tarea, abstrayendo la decisión de problemas e inconvenientes pertenecientes a otras subtareas del problema.
+añaden cierto valor en aquellos problemas que cuentan con un fin complejo que se puede presentar como una suma de tareas a tratar de forma paralela 
+y ordenada. En otras palabras, de forma jerárquica. Este sistema emplea agentes a distintos niveles de abstracción para resolver el problema, que les permite tomar decisiones con un nivel de abstracción que no está influenciado por factores de menor nivel.
 
-Por el otro lado, se ha podido observar la influencia de la sobre-división de las tareas. Al dividir una tarea en demasiados niveles de abstracción, se realizaba
+Por otro lado, se ha podido observar la influencia de la sobre-división de las tareas. Al dividir una tarea en demasiados niveles de abstracción, se realizaba
 una sobre-abstracción del espacio, lo que llevaba a tomar decisiones sin la información necesaria para dicha labor. En el caso del estudio realizado, dicho problema
-se ve bien representado en el caso de la selección de los destinos a navegar, donde debido a la excesiva abstracción del mapa de estados, se perdía la información
+se ve bien representado en la selección de los destinos a navegar, en los que, debido a la excesiva abstracción del mapa de estados, se perdía la información
 espacial de las paredes. 
 
-Debido a ello, se estima que, aunque dicha decisión se tome como abstraible en otras investigaciones, la naturaleza cerrada en cuestiones de navegación del problema
-tratado anulaba dicha característica.
+Aunque la abstracción puede funcionar en otros entornos, en este problema se emplea un mapa con una naturaleza más cerrada, lo que no permite una abstracción efectiva para la tarea de navegación estudiada.
 
 \section{Trabajo Fúturo}
 En vista de las limitaciones presentes del entorno, se plantea como trabajo para continuar 
